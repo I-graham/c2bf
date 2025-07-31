@@ -1,0 +1,307 @@
+WHITESPACE =  _{ " " | "\t" | NEWLINE }
+
+CONSTANT =  @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
+
+IDENTIFIER = @{
+  ASCII_ALPHANUMERIC+
+}
+
+primary_expr =
+	{ CONSTANT
+	| IDENTIFIER
+	| "(" ~ expr ~ ")"
+	}
+
+postfix_expr = { primary_expr ~ (postfixture)* }
+	postfixture = {index | call | field | pfield | inc | dec}
+	index = { "[" ~ expr ~ "]" }
+	call = { "(" ~ ")" | "(" ~ assign_expr ~ ("," ~ assign_expr)* ~ ")" }
+	field = { "." ~ IDENTIFIER }
+	pfield = { "->" ~ IDENTIFIER }
+	inc = { "++" }
+	dec = { "--" }
+	
+unary_expr =
+	{ postfix_expr
+	| "++" ~ unary_expr
+	| "--" ~ unary_expr
+	| unary_operator ~ cast_expr
+	| "sizeof" ~ unary_expr
+	| "sizeof" ~ "(" ~ type_name ~ ")"
+	}
+
+unary_operator =
+	{ "&"
+	| "*"
+	| "+"
+	| "-"
+	| "~"
+	| "!"
+	}
+
+cast_expr =
+	{ unary_expr
+	| "(" ~ type_name ~ ")" ~ cast_expr
+	}
+
+mul_expr = { cast_expr ~ (mul_op ~ cast_expr)* }
+	mul_op = { "*" | "/" | "%" }
+
+add_expr = { mul_expr ~ (add_op ~ mul_expr)* }
+	add_op = { "+" | "-" }
+	
+shift_expr = { add_expr ~ (shift_op ~ add_expr)* }
+	shift_op = { "<<" | ">>" }
+
+rel_expr = { shift_expr ~ (rel_op ~ shift_expr)* }
+	rel_op = { "<" | ">" | "<=" | ">=" }
+
+eq_expr = {rel_expr ~ (eq_op ~ rel_expr)* }
+	eq_op = { "==" | "!=" }
+	
+and_expr = {eq_expr ~ ("&" ~ eq_expr)* }
+
+xor_expr = {and_expr ~ ("^" ~ and_expr)* }
+
+ior_expr = {xor_expr ~ ("^" ~ xor_expr)* }
+
+land_expr = {ior_expr ~ ("&&" ~ ior_expr)*}
+
+lor_expr = {land_expr ~ ("||" ~ land_expr)*}
+
+conditional_expr =
+	{ lor_expr
+	| lor_expr ~ "?" ~ expr ~ "{" ~ conditional_expr
+ 	} 	
+
+assign_expr =
+	{ conditional_expr
+	| unary_expr ~ assign_op ~ assign_expr
+	}
+
+assign_op =
+	{ "="
+	| "*="
+	| "/="
+	| "%="
+	| "+="
+	| "-="
+	| "<<="
+	| ">>="
+	| "&="
+	| "|="
+	| "^="
+	}
+
+expr = {assign_expr ~ ("," ~ assign_expr)* }
+
+constant_expr =
+	{ conditional_expr
+	}
+
+declaration =
+	{ declaration_specifiers ~ ";"
+	| declaration_specifiers ~ init_declarator_list ~ ";"
+	}
+
+declaration_specifiers =
+	{ storage_class_specifier
+	| storage_class_specifier ~ declaration_specifiers
+	| type_specifier
+	| type_specifier ~ declaration_specifiers
+	| type_qualifier
+	| type_qualifier ~ declaration_specifiers
+	}
+
+init_declarator_list = { init_declarator ~ ("," ~ init_declarator)* }
+
+init_declarator = { declarator ~ ("=" ~ initializer)* }
+
+storage_class_specifier =
+	{ "typedef"
+	| "extern"
+	| "static"
+	| "auto"
+	| "register"
+	}
+
+type_specifier =
+	{ "void"
+	| "char"
+	| "short"
+	| "int"
+	| "long"
+	| "float"
+	| "double"
+	| "signed"
+	| "unsigned"
+	| struct_or_union_specifier
+	| enum_specifier
+	| IDENTIFIER
+	}
+
+struct_or_union_specifier =
+	{ struct_or_union ~ IDENTIFIER ~ "{" ~ struct_declaration_list ~ "}"
+	| struct_or_union ~ "{" ~ struct_declaration_list ~ "}"
+	| struct_or_union ~ IDENTIFIER
+	}
+
+struct_or_union =
+	{ "struct"
+	| "union"
+	}
+
+struct_declaration_list = { struct_declaration+ }
+
+struct_declaration = { specifier_qualifier_list ~ struct_declarator_list ~ ";" }
+
+specifier_qualifier_list =
+	{ type_specifier ~ specifier_qualifier_list*
+	| type_qualifier ~ specifier_qualifier_list*
+	}
+
+struct_declarator_list = { struct_declarator ~ ("," ~ struct_declarator)* }
+
+struct_declarator =
+	{ declarator
+	| ":" ~ constant_expr
+	| declarator ~ ":" ~ constant_expr
+	}
+
+enum_specifier =
+	{ "enum" ~ "{" ~ enumerator_list ~ "}"
+	| "enum" ~ IDENTIFIER ~ "{" ~ enumerator_list ~ "}"
+	| "enum" ~ IDENTIFIER
+	}
+
+enumerator_list = { enumerator ~ ("," ~ enumerator)* }
+
+enumerator =
+	{ IDENTIFIER
+	| IDENTIFIER ~ "=" ~ constant_expr
+	}
+
+type_qualifier =
+	{ "const"
+	| "volatile"
+	}
+
+declarator =
+	{ pointer ~ direct_declarator
+	| direct_declarator
+	}
+
+direct_declarator = { dd_base ~ ( sized | unsized | params )* }
+	dd_base    = { IDENTIFIER | "(" ~ declarator ~ ")"}
+	sized   = { "[" ~ constant_expr ~ "]" }
+	unsized = { "[" ~ "]" }
+	params  = { "(" ~ ( parameter_list )? ~ ")"}
+
+pointer = { "*" ~ (type_qualifier_list | pointer | type_qualifier_list ~ pointer)? }
+
+type_qualifier_list = { (type_qualifier)+ }
+
+parameter_type_list =
+	{ parameter_list
+	| parameter_list ~ "," ~ "..."
+	}
+
+parameter_list = { parameter_declaration ~ ("," ~ parameter_declaration)* }
+
+parameter_declaration =
+	{ declaration_specifiers ~ declarator
+	| declaration_specifiers ~ abstract_declarator
+	| declaration_specifiers 
+	}
+
+identifier_list = { IDENTIFIER ~ ("," ~ IDENTIFIER)* }
+
+type_name =
+	{ specifier_qualifier_list
+	| specifier_qualifier_list ~ abstract_declarator
+	}
+
+abstract_declarator =
+	{ pointer
+	| direct_abstract_declarator
+	| pointer ~ direct_abstract_declarator
+	}
+
+direct_abstract_declarator = { da_base ~ (da_extension)* }
+	da_base = { da_paren | brackets | da_const | da_params }
+		da_paren  = { "(" ~ abstract_declarator ~ ")" }
+		brackets  = { "[" ~ "]" }
+		da_const  = { "[" ~ constant_expr ~ "]" }
+		da_params = { "(" ~ parameter_list ~ ")"}
+	da_extension = { brackets | da_const | da_params }
+
+initializer =
+	{ assign_expr
+	| "{" ~ initializer_list ~ "}"
+	| "{" ~ initializer_list ~ "," ~ "}"
+	}
+
+initializer_list = { initializer ~ ("," ~ initializer)* }
+
+statement =
+	{ labeled_statement
+	| compound_statement
+	| expr_statement
+	| selection_statement
+	| iteration_statement
+	| jump_statement
+	}
+
+labeled_statement =
+	{ IDENTIFIER ~ ":" ~ statement
+	| "case" ~ ":" ~ constant_expr ~ ":" ~ statement
+	| "default" ~ ":" ~ statement
+	}
+
+compound_statement =
+	{ "{" ~ "}"
+	| "{" ~ statement_list ~ "}"
+	| "{" ~ declaration_list ~ "}"
+	| "{" ~ declaration_list ~ statement_list ~ "}"
+	}
+
+declaration_list = { declaration+ }
+
+statement_list = { statement+ }
+
+expr_statement = { expr? ~ ";" }
+
+selection_statement =
+	{ "if" ~ "(" ~ expr ~ ")" ~ statement
+	| "if" ~ "(" ~ expr ~ ")" ~ statement ~ "else" ~ statement
+	| "switch" ~ "(" ~ expr ~ ")" ~ statement
+	}
+
+iteration_statement =
+	{ "while" ~ "(" ~ expr ~ ")" ~ statement
+	| "do" ~ statement ~ "while" ~ "(" ~ expr ~ ")" ~ ";"
+	| "for" ~ "(" ~ expr_statement ~ expr_statement ~ ")" ~ statement
+	| "for" ~ "(" ~ expr_statement ~ expr_statement ~ expr ~ ")" ~ statement
+	}
+
+jump_statement =
+	{ "goto" ~ IDENTIFIER ~ ";"
+	| "continue" ~ ";"
+	| "break" ~ ";"
+	| "return" ~ ";"
+	| "return" ~ expr ~ ";"
+	}
+
+translation_unit = { external_declaration+ }
+
+external_declaration =
+	{ function_definition
+	| declaration
+	}
+
+function_definition =
+	{ declaration_specifiers ~ declarator ~ declaration_list ~ compound_statement
+	| declaration_specifiers ~ declarator ~ compound_statement
+	| declarator ~ declaration_list ~ compound_statement
+	| declarator ~ compound_statement
+	}
