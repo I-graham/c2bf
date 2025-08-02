@@ -16,7 +16,7 @@ impl ASTNode for Op {
             "*" => Mul,
             "/" => Div,
 
-            _ => unimplemented!(),
+            s => unimplemented!("Unknown op `{}`", s),
         }
     }
 }

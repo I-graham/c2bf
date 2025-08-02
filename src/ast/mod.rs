@@ -42,24 +42,36 @@ impl ASTNode for AST {
 macro_rules! parser_rule {
     ($pair:ident $($s:ident)?:
         $(
-            $rule:ident $([$($nonterm:ident),*])? -> $out:expr
-        );*
+            $($rules:ident)|+ $([$($nonterm:ident),* $(, .. $v:ident)?] -> $out:expr);+ ;
+        )*
     ) => {
         use Rule::*;
         $(
             let $s = $pair.as_str();
         )?
-        match $pair.as_rule() {
-            $($rule => {
-                #[allow(unused)]
-                let mut pairs = $pair.into_inner();
-                $($(
-                    let next = pairs.next().unwrap();
-                    let $nonterm = ASTNode::parse(next);
-                )*)?
-                $out
-            })*
-            _ => unimplemented!()
+        let pairs = $pair.clone().into_inner().collect::<Vec<_>>();
+        let rule = $pair.as_rule();
+        match rule {
+            $(
+                $($rules)|+ => match &pairs[..] {
+                    $([$($nonterm),* $(, $v @ ..)?] => {
+                        $(
+                            let $nonterm = $nonterm.clone();
+                            let $nonterm = ASTNode::parse($nonterm);
+                        )*
+
+                        $(
+                            let mut $v = $v.into_iter().cloned();
+                        )?
+
+                        $out
+                    })+
+
+                    _ => unimplemented!("Unable to match `{}`", $pair)
+                }
+            )*
+
+            r => unimplemented!("Rule `{:?}` not matched.", r)
         }
     }
 }

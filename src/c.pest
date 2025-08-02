@@ -1,6 +1,6 @@
-WHITESPACE =  _{ " " | "\t" | NEWLINE }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-CONSTANT =  @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
+CONSTANT = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
 
 IDENTIFIER = @{
   ASCII_ALPHANUMERIC+
@@ -59,24 +59,29 @@ rel_expr = { shift_expr ~ (rel_op ~ shift_expr)* }
 eq_expr = {rel_expr ~ (eq_op ~ rel_expr)* }
 	eq_op = { "==" | "!=" }
 	
-and_expr = {eq_expr ~ ("&" ~ eq_expr)* }
+and_expr = {eq_expr ~ (and_op ~ eq_expr)* }
+	and_op = {"&"}
 
-xor_expr = {and_expr ~ ("^" ~ and_expr)* }
+xor_expr = {and_expr | (xor_op ~ and_expr)* }
+	xor_op = {"^"}
 
-ior_expr = {xor_expr ~ ("^" ~ xor_expr)* }
+ior_expr = {xor_expr ~ (ior_op ~ xor_expr)* }
+	ior_op = {"|"}
 
-land_expr = {ior_expr ~ ("&&" ~ ior_expr)*}
+land_expr = {ior_expr ~ (land_op ~ ior_expr)*}
+	land_op = {"&&"}
 
-lor_expr = {land_expr ~ ("||" ~ land_expr)*}
+lor_expr = {land_expr ~ (lor_op ~ land_expr)*}
+	lor_op = {"||"}
 
 conditional_expr =
-	{ lor_expr
-	| lor_expr ~ "?" ~ expr ~ "{" ~ conditional_expr
+	{ lor_expr ~ "?" ~ expr ~ "{" ~ conditional_expr
+	| lor_expr
  	} 	
 
 assign_expr =
-	{ conditional_expr
-	| unary_expr ~ assign_op ~ assign_expr
+	{ unary_expr ~ assign_op ~ assign_expr
+	| conditional_expr
 	}
 
 assign_op =
@@ -236,9 +241,9 @@ direct_abstract_declarator = { da_base ~ (da_extension)* }
 	da_extension = { brackets | da_const | da_params }
 
 initializer =
-	{ assign_expr
-	| "{" ~ initializer_list ~ "}"
+	{ "{" ~ initializer_list ~ "}"
 	| "{" ~ initializer_list ~ "," ~ "}"
+	| assign_expr
 	}
 
 initializer_list = { initializer ~ ("," ~ initializer)* }

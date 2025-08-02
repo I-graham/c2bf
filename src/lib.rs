@@ -13,7 +13,7 @@ type Base = Expr;
 pub fn exec_file(filename: &str) {
     let file = &std::fs::read_to_string(filename).unwrap();
 
-    let pair = CParser::parse(Rule::primary_expr, file)
+    let pair = CParser::parse(Rule::add_expr, file)
         .unwrap()
         .next()
         .unwrap();
@@ -24,6 +24,7 @@ pub fn exec_file(filename: &str) {
     let mut code = vec![];
 
     parsed.compile(&ctxt, &mut code);
+    code.push(StackInst::Print);
 
     exec_stack_program(&code);
 }
