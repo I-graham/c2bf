@@ -1,10 +1,12 @@
 use super::*;
 use pest::iterators::Pair;
 
+pub mod dtype;
 pub mod expr;
 pub mod op;
 pub mod statement;
 
+pub use dtype::*;
 pub use expr::*;
 pub use op::*;
 pub use statement::*;
@@ -38,11 +40,16 @@ impl ASTNode for AST {
     }
 }
 
+// Useful for trashing inputs
+impl ASTNode for () {
+    fn parse(_: Pair<Rule>) -> Self {}
+}
+
 #[macro_export]
 macro_rules! parser_rule {
     ($pair:ident $($s:ident)?:
         $(
-            $($rules:ident)|+ $([$($nonterm:ident),* $(, .. $v:ident)?] -> $out:expr);+ ;
+            $($rules:ident)|+ $([$(.. $v1:ident ,)? $($nonterm:ident $(: $ty:ty)?),* $(, .. $v2:ident)?] -> $out:expr);+ ;
         )*
     ) => {
         use Rule::*;
@@ -54,14 +61,21 @@ macro_rules! parser_rule {
         match rule {
             $(
                 $($rules)|+ => match &pairs[..] {
-                    $([$($nonterm),* $(, $v @ ..)?] => {
+                    $([$($v1 @ .. ,)? $($nonterm),* $(, $v2 @ ..)?] => {
+                        $(
+                            let $v1 = $v1.into_iter().cloned();
+                        )?
+
                         $(
                             let $nonterm = $nonterm.clone();
                             let $nonterm = ASTNode::parse($nonterm);
+                            $(
+                                let $nonterm : $ty = $nonterm;
+                            )?
                         )*
 
                         $(
-                            let mut $v = $v.into_iter().cloned();
+                            let mut $v2 = $v2.into_iter().cloned();
                         )?
 
                         $out

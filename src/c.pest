@@ -23,12 +23,18 @@ postfix_expr = { primary_expr ~ (postfixture)* }
 	
 unary_expr =
 	{ postfix_expr
-	| "++" ~ unary_expr
-	| "--" ~ unary_expr
+	| prefix_op ~ unary_expr
 	| unary_operator ~ cast_expr
-	| "sizeof" ~ unary_expr
-	| "sizeof" ~ "(" ~ type_name ~ ")"
+	| type_size_expr
 	}
+
+prefix_op =
+	{ "++"
+	| "--"
+	| "sizeof"
+	}
+
+type_size_expr = { "sizeof" ~ "(" ~ type_name ~ ")" }
 
 unary_operator =
 	{ "&"
@@ -160,10 +166,7 @@ struct_declaration_list = { struct_declaration+ }
 
 struct_declaration = { specifier_qualifier_list ~ struct_declarator_list ~ ";" }
 
-specifier_qualifier_list =
-	{ type_specifier ~ specifier_qualifier_list*
-	| type_qualifier ~ specifier_qualifier_list*
-	}
+specifier_qualifier_list = { (type_specifier | type_qualifier)+}
 
 struct_declarator_list = { struct_declarator ~ ("," ~ struct_declarator)* }
 
