@@ -1,7 +1,7 @@
 use super::*;
 
 pub enum Expr {
-    Const(u8),
+    ConstW(u32),
     Var(String),
     Assoc(Box<Expr>, Vec<(Op, Expr)>),
     Unary(Op, Box<Expr>),
@@ -14,7 +14,7 @@ impl ASTNode for Expr {
             pair p:
 
             IDENTIFIER [] -> Self::Var(p.into());
-            CONSTANT [] -> Self::Const(p.parse::<u8>().unwrap());
+            CONSTANT [] -> Self::ConstW(p.parse::<u32>().unwrap());
             primary_expr
             | postfix_expr
             | cast_expr
@@ -51,9 +51,9 @@ impl ASTNode for Expr {
     fn compile(&self, context: &CompileContext, stream: &mut Vec<StackInst>) {
         use StackInst::*;
         match self {
-            Self::Const(v) => stream.push(Byte(*v)),
+            Self::ConstW(v) => stream.push(PushW(*v)),
             Self::Var(_) => todo!(),
-            Self::Unary(op, e) => todo!(),
+            Self::Unary(_op, _e) => todo!(),
             Self::TypeSize(_) => todo!(),
             Self::Assoc(head, args) => {
                 head.compile(context, stream);
@@ -71,5 +71,18 @@ impl ASTNode for Expr {
                 }
             }
         };
+    }
+}
+
+impl Expr {
+    // For constant expressions
+    pub fn evaluate_word(&self) -> u32 {
+        let mut code = vec![];
+        self.compile(&CompileContext::default(), &mut code);
+
+        let mut vm = StackMachine::default();
+        vm.exec(&code);
+
+        vm.stack[0]
     }
 }

@@ -8,7 +8,7 @@ pub fn exec_stack_program(code: &StackProgram) {
 
 #[derive(Default)]
 pub struct StackMachine {
-    pub stack: Vec<u8>,
+    pub stack: Vec<u32>,
     pub ip: usize,
 }
 
@@ -18,7 +18,7 @@ impl StackMachine {
             use StackInst::*;
             match inst {
                 Nop => (),
-                Byte(b) => self.stack.push(*b),
+                PushW(b) => self.stack.push(*b),
                 o @ (Add | Sub | Mul | Div) => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();

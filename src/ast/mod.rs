@@ -58,19 +58,22 @@ macro_rules! parser_rule {
         )?
         let pairs = $pair.clone().into_inner().collect::<Vec<_>>();
         let rule = $pair.as_rule();
+        #[allow(unreachable_patterns)]
+        #[allow(unused_mut)]
+        #[allow(clippy::all)]
         match rule {
             $(
                 $($rules)|+ => match &pairs[..] {
                     $([$($v1 @ .. ,)? $($nonterm),* $(, $v2 @ ..)?] => {
                         $(
-                            let $v1 = $v1.into_iter().cloned();
+                            let mut $v1 = $v1.into_iter().cloned();
                         )?
 
                         $(
                             let $nonterm = $nonterm.clone();
-                            let $nonterm = ASTNode::parse($nonterm);
+                            let mut $nonterm = ASTNode::parse($nonterm);
                             $(
-                                let $nonterm : $ty = $nonterm;
+                                let mut $nonterm : $ty = $nonterm;
                             )?
                         )*
 

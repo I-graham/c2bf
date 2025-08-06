@@ -8,7 +8,7 @@ pub type StackProgram = Vec<StackInst>;
 pub enum StackInst {
     #[default]
     Nop,
-    Byte(u8),
+    PushW(u32),
     Add,
     Sub,
     Mul,

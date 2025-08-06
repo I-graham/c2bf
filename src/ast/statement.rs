@@ -5,7 +5,7 @@ pub enum ASTStatement {
 }
 
 impl ASTNode for ASTStatement {
-    fn parse(pairs: Pair<Rule>) -> Self {
+    fn parse(_pairs: Pair<Rule>) -> Self {
         todo!()
     }
 
@@ -15,4 +15,3 @@ impl ASTNode for ASTStatement {
         }
     }
 }
-

@@ -151,6 +151,8 @@ type_specifier =
 	| IDENTIFIER
 	}
 
+
+
 struct_or_union_specifier =
 	{ struct_or_union ~ IDENTIFIER ~ "{" ~ struct_declaration_list ~ "}"
 	| struct_or_union ~ "{" ~ struct_declaration_list ~ "}"
@@ -171,9 +173,9 @@ specifier_qualifier_list = { (type_specifier | type_qualifier)+}
 struct_declarator_list = { struct_declarator ~ ("," ~ struct_declarator)* }
 
 struct_declarator =
-	{ declarator
-	| ":" ~ constant_expr
+	{ ":" ~ constant_expr
 	| declarator ~ ":" ~ constant_expr
+	| declarator
 	}
 
 enum_specifier =
@@ -199,49 +201,48 @@ declarator =
 	| direct_declarator
 	}
 
-direct_declarator = { dd_base ~ ( sized | unsized | params )* }
-	dd_base    = { IDENTIFIER | "(" ~ declarator ~ ")"}
-	sized   = { "[" ~ constant_expr ~ "]" }
-	unsized = { "[" ~ "]" }
-	params  = { "(" ~ ( parameter_list )? ~ ")"}
+direct_declarator = { dd_base  ~ ( sized | brackets | params )* }
+	dd_base  = { IDENTIFIER | "(" ~ declarator ~ ")" }
+	sized    = { "[" ~ constant_expr ~ "]" }
+	brackets = { "[" ~ "]" }
+	params   = { "(" ~ ( parameter_list )? ~ ")"}
 
-pointer = { "*" ~ (type_qualifier_list | pointer | type_qualifier_list ~ pointer)? }
+pointer = { deref ~ (type_qualifier | deref)* }
+	deref = {"*"}
 
 type_qualifier_list = { (type_qualifier)+ }
 
 parameter_type_list =
-	{ parameter_list
-	| parameter_list ~ "," ~ "..."
+	{ parameter_list ~ "," ~ "..."
+	| parameter_list
 	}
 
 parameter_list = { parameter_declaration ~ ("," ~ parameter_declaration)* }
 
 parameter_declaration =
-	{ declaration_specifiers ~ declarator
-	| declaration_specifiers ~ abstract_declarator
-	| declaration_specifiers 
+	{ named_param
+	| type_name
 	}
+
+named_param = { specifier_qualifier_list ~ declarator }
 
 identifier_list = { IDENTIFIER ~ ("," ~ IDENTIFIER)* }
 
 type_name =
-	{ specifier_qualifier_list
-	| specifier_qualifier_list ~ abstract_declarator
+	{ specifier_qualifier_list ~ abstract_declarator
+	| specifier_qualifier_list
 	}
 
 abstract_declarator =
-	{ pointer
+	{ pointer ~ direct_abstract_declarator
+	| pointer
 	| direct_abstract_declarator
-	| pointer ~ direct_abstract_declarator
 	}
 
 direct_abstract_declarator = { da_base ~ (da_extension)* }
-	da_base = { da_paren | brackets | da_const | da_params }
-		da_paren  = { "(" ~ abstract_declarator ~ ")" }
-		brackets  = { "[" ~ "]" }
-		da_const  = { "[" ~ constant_expr ~ "]" }
-		da_params = { "(" ~ parameter_list ~ ")"}
-	da_extension = { brackets | da_const | da_params }
+	da_base = { da_paren | brackets | sized | params }
+	da_paren  = { "(" ~ abstract_declarator ~ ")" }
+	da_extension = { brackets | sized | params }
 
 initializer =
 	{ "{" ~ initializer_list ~ "}"

@@ -13,7 +13,7 @@ type Base = Expr;
 pub fn exec_file(filename: &str) {
     let file = &std::fs::read_to_string(filename).unwrap();
 
-    let pair = CParser::parse(Rule::add_expr, file)
+    let pair = CParser::parse(Rule::type_size_expr, file)
         .unwrap()
         .next()
         .unwrap();
