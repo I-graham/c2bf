@@ -1,1 +1,1 @@
-sizeof(int[])
+sizeof(int[10][10])

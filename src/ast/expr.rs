@@ -18,6 +18,7 @@ impl ASTNode for Expr {
             primary_expr
             | postfix_expr
             | cast_expr
+            | constant_expr
                 [e] -> e;
             unary_expr
                 [e] -> e;
@@ -45,6 +46,8 @@ impl ASTNode for Expr {
                     }
                     Self::Assoc(Box::new(acc), args)
                 };
+            conditional_expr
+                [e] -> e;
         }
     }
 
@@ -54,7 +57,7 @@ impl ASTNode for Expr {
             Self::ConstW(v) => stream.push(PushW(*v)),
             Self::Var(_) => todo!(),
             Self::Unary(_op, _e) => todo!(),
-            Self::TypeSize(_) => todo!(),
+            Self::TypeSize(ty) => stream.push(PushW(ty.size())),
             Self::Assoc(head, args) => {
                 head.compile(context, stream);
 

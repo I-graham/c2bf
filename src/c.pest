@@ -201,8 +201,7 @@ declarator =
 	| direct_declarator
 	}
 
-direct_declarator = { dd_base  ~ ( sized | brackets | params )* }
-	dd_base  = { IDENTIFIER | "(" ~ declarator ~ ")" }
+direct_declarator = { (IDENTIFIER | "(" ~ declarator ~ ")") ~ ( sized | brackets | params )* }
 	sized    = { "[" ~ constant_expr ~ "]" }
 	brackets = { "[" ~ "]" }
 	params   = { "(" ~ ( parameter_list )? ~ ")"}
@@ -239,10 +238,10 @@ abstract_declarator =
 	| direct_abstract_declarator
 	}
 
-direct_abstract_declarator = { da_base ~ (da_extension)* }
-	da_base = { da_paren | brackets | sized | params }
-	da_paren  = { "(" ~ abstract_declarator ~ ")" }
-	da_extension = { brackets | sized | params }
+direct_abstract_declarator =
+	{ "(" ~ abstract_declarator ~ ")" ~ (brackets | sized | params)*
+	| (brackets | sized | params)+
+	}
 
 initializer =
 	{ "{" ~ initializer_list ~ "}"

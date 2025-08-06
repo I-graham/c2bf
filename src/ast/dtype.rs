@@ -86,17 +86,15 @@ impl ASTNode for DType {
             direct_abstract_declarator
             | direct_declarator
                 [.. exts,] -> {
-                    let base_pair = exts.next().unwrap();
-                    let mut base = match base_pair.as_rule() {
-                        dd_base => {
-                               let inner = base_pair.into_inner().next().unwrap();
-                               match inner.as_rule() {
-                                   IDENTIFIER => Void,
-                                   declarator => DType::parse(inner),
-                                   _ => unreachable!(),
-                               }
-                        }
-                        da_base => DType::parse(base_pair),
+                    let mut exts : Vec<_> = exts.collect();
+
+                    let base_pair = &exts[0];
+                    let rule = base_pair.as_rule();
+
+                    let mut base = match rule {
+                        declarator | abstract_declarator => DType::parse(exts.remove(0)),
+
+                        IDENTIFIER | brackets | sized | params => Void,
                         _ => unreachable!(),
                     };
 
@@ -115,7 +113,7 @@ impl ASTNode for DType {
 
                                  Function(param_types, Box::new(base))
                              }
-                             _ => unreachable!(),
+                             r => unreachable!("{:?}", r),
                         }
                     }
                     base
@@ -151,6 +149,22 @@ impl DType {
             Pointer(_, b) => b.change_base(base),
             Function(_, r) => r.change_base(base),
             _ => *self = base,
+        }
+    }
+
+    pub fn size(&self) -> u32 {
+        use DType::*;
+        match self {
+            Void => 0,
+            U8 | S8 => 1,
+            U16 | S16 => 2,
+            U32 | S32 => 4,
+            U64 | S64 => 8,
+            Float => 4,
+            Double => 8,
+            Pointer(_, _) => 4,
+            Array(n, dtype) => n * dtype.size(),
+            Function(_, _) => unreachable!(),
         }
     }
 }
