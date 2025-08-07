@@ -18,7 +18,7 @@ impl ASTNode for Expr {
             primary_expr
             | postfix_expr
             | cast_expr
-            | constant_expr
+            | const_expr
                 [e] -> e;
             unary_expr
                 [e] -> e;

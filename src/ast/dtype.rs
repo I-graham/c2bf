@@ -94,17 +94,17 @@ impl ASTNode for DType {
                     let mut base = match rule {
                         declarator | abstract_declarator => DType::parse(exts.remove(0)),
 
-                        IDENTIFIER | brackets | sized | params => Void,
-                        _ => unreachable!(),
+                        IDENTIFIER | brackets | const_sized | sized | params => Void,
+                        r => unreachable!("{:?}", r),
                     };
 
                     for ext in exts {
                         base = match ext.as_rule() {
-                            brackets => base.pointer(),
-                            sized => {
-                                let const_expr = ext.into_inner().next().unwrap();
-                                let const_expr = Expr::parse(const_expr);
-                                let size = const_expr.evaluate_word();
+                            brackets | typequal => base.pointer(),
+                            const_sized | sized => {
+                                let size_expr = ext.into_inner().last().unwrap();
+                                let size_expr = Expr::parse(size_expr);
+                                let size = size_expr.evaluate_word();
 
                                 Array(size, Box::new(base))
                              },
