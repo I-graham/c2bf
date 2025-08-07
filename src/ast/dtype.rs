@@ -107,6 +107,7 @@ impl ASTNode for DType {
                                 if let Some(size) = size_expr.const_arithmetic_expr() {
                                     Array(size as u32, Box::new(base))
                                 } else {
+                                    // VLA
                                     base.pointer()
                                 }
                              },

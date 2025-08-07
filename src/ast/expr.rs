@@ -6,25 +6,41 @@ pub enum Expr {
     Assoc(Box<Expr>, Vec<(Op, Expr)>),
     Unary(Op, Box<Expr>),
     TypeSize(DType),
+    Cast(DType, Box<Expr>),
+    Cond(Box<Expr>, Box<Expr>, Box<Expr>),
+    Assign(Box<Expr>, Op, Box<Expr>),
+    Seq(Vec<Expr>),
 }
 
 impl ASTNode for Expr {
     fn parse(pair: Pair<Rule>) -> Self {
+        use Expr::*;
         parser_rule! {
-            pair p:
+            pair:
 
-            IDENTIFIER [] -> Self::Var(p.into());
-            CONSTANT [] -> Self::ConstW(p.parse::<u32>().unwrap());
+            IDENTIFIER [s] -> Var(s);
+            CONSTANT [s:String] -> ConstW(s.parse::<u32>().unwrap());
+
             primary_expr
-            | postfix_expr
-            | cast_expr
-            | const_expr
                 [e] -> e;
+
+            postfix_expr // TODO
+                [e] -> e;
+
+            const_expr
+                [e] -> e;
+
             unary_expr
                 [e] -> e;
-                [op, e] -> Self::Unary(op, Box::new(e));
+                [op, e] -> Unary(op, e);
+
             type_size_expr
-                [ty] -> Self::TypeSize(ty);
+                [ty] -> TypeSize(ty);
+
+            cast_expr
+                [e] -> e;
+                [t, c] -> Cast(t, c);
+
             add_expr
             | mul_expr
             | shift_expr
@@ -44,10 +60,21 @@ impl ASTNode for Expr {
                             ASTNode::parse(arg)
                         ));
                     }
-                    Self::Assoc(Box::new(acc), args)
+                    Assoc(acc, args)
                 };
+
             conditional_expr
                 [e] -> e;
+                [c, t, f] -> Cond(c,t,f);
+
+            assign_expr
+                [e] -> e;
+                [a, o, e] -> Assign(a, o, e);
+
+            expr
+                [.. es,] -> {
+                    Seq(es.map(Self::parse).collect())
+                };
         }
     }
 
@@ -75,6 +102,8 @@ impl ASTNode for Expr {
                     stream.push(op);
                 }
             }
+
+            _ => todo!(),
         };
     }
 }
@@ -108,7 +137,7 @@ impl Expr {
                 }
             }
             TypeSize(dtype) => Some(dtype.size() as u64),
-            Var(_) => None,
+            _ => None,
         }
     }
 }

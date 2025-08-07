@@ -107,9 +107,7 @@ assign_op =
 
 expr = {assign_expr ~ ("," ~ assign_expr)* }
 
-const_expr =
-	{ conditional_expr
-	}
+const_expr = { conditional_expr }
 
 declaration =
 	{ declaration_specifiers ~ ";"
@@ -144,8 +142,6 @@ type_specifier =
 	| enum_specifier
 	| IDENTIFIER
 	}
-
-
 
 struct_or_union_specifier =
 	{ struct_or_union ~ IDENTIFIER ~ "{" ~ struct_declaration_list ~ "}"
@@ -253,40 +249,43 @@ initializer =
 
 initializer_list = { initializer ~ ("," ~ initializer)* }
 
-statement =
-	{ labeled_statement
-	| compound_statement
-	| expr_statement
-	| selection_statement
-	| iteration_statement
-	| jump_statement
+stmt =
+	{ labeled_stmt
+	| compound_stmt
+	| expr_stmt
+	| selection_stmt
+	| iteration_stmt
+	| jump_stmt
 	}
 
-labeled_statement =
-	{ IDENTIFIER ~ ":" ~ statement
-	| "case" ~ ":" ~ const_expr ~ ":" ~ statement
-	| "default" ~ ":" ~ statement
+labeled_stmt =
+	{ IDENTIFIER ~ ":" ~ stmt
+	| case_stmt
+	| default_stmt
 	}
 
-compound_statement = { "{" ~ (declaration | statement)* ~ "}" }
+case_stmt    = { "case" ~ ":" ~ const_expr ~ ":" ~ stmt }
+default_stmt = { "default" ~ ":" ~ stmt }
 
-statement_list = { statement+ }
+compound_stmt = { "{" ~ (declaration | stmt)* ~ "}" }
 
-expr_statement = { expr? ~ ";" }
+expr_stmt = { expr? ~ ";" }
 
-selection_statement =
-	{ "if" ~ "(" ~ expr ~ ")" ~ statement
-	| "if" ~ "(" ~ expr ~ ")" ~ statement ~ "else" ~ statement
-	| "switch" ~ "(" ~ expr ~ ")" ~ statement
+selection_stmt =
+	{ if_stmt
+	| switch_stmt
 	}
 
-iteration_statement = { while | do_while | for_while }
+if_stmt     = { "if" ~ "(" ~ expr ~ ")" ~ ("expr" ~ stmt)? }
+switch_stmt = { "switch" ~ "(" ~ expr ~ ")" ~ stmt }
 
-while = { "while" ~ "(" ~ expr ~ ")" ~ statement }
-do_while = {"do" ~ statement ~ "while" ~ "(" ~ expr ~ ")" ~ ";" }
-for_while = { "for" ~ "(" ~ (expr_statement | declaration) ~ expr_statement ~ expr? ~ ")" ~ statement }
+iteration_stmt = { while_loop | do_loop | for_loop }
 
-jump_statement =
+while_loop = { "while" ~ "(" ~ expr ~ ")" ~ stmt }
+do_loop    = {"do" ~ stmt ~ "while" ~ "(" ~ expr ~ ")" ~ ";" }
+for_loop   = { "for" ~ "(" ~ (expr_stmt | declaration) ~ expr? ~ ";" ~ expr? ~ ")" ~ stmt }
+
+jump_stmt =
 	{ "goto" ~ IDENTIFIER ~ ";"
 	| "continue" ~ ";"
 	| "break" ~ ";"
@@ -301,4 +300,4 @@ external_declaration =
 	| declaration
 	}
 
-function_definition = { declaration_specifiers ~ declarator ~ compound_statement }
+function_definition = { declaration_specifiers ~ declarator ~ compound_stmt }

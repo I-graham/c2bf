@@ -21,45 +21,42 @@ pub trait ASTNode {
     }
 }
 
-pub struct AST {
-    stmts: Vec<ASTStatement>,
-}
-
 #[derive(Default)]
 pub struct CompileContext {}
-
-impl ASTNode for AST {
-    fn parse(_: Pair<Rule>) -> Self {
-        todo!()
-    }
-
-    fn compile(&self, context: &CompileContext, stream: &mut Vec<StackInst>) {
-        for statement in &self.stmts {
-            statement.compile(context, stream)
-        }
-    }
-}
 
 // Useful for trashing inputs
 impl ASTNode for () {
     fn parse(_: Pair<Rule>) -> Self {}
 }
 
+// Useful for reading strings
+impl ASTNode for String {
+    fn parse(pair: Pair<Rule>) -> Self {
+        pair.as_str().into()
+    }
+}
+
+impl<T: ASTNode> ASTNode for Box<T> {
+    fn parse(pair: Pair<Rule>) -> Self {
+        T::parse(pair).into()
+    }
+
+    fn compile(&self, context: &CompileContext, stream: &mut Vec<StackInst>) {
+        (**self).compile(context, stream);
+    }
+}
+
 #[macro_export]
 macro_rules! parser_rule {
-    ($pair:ident $($s:ident)?:
+    ($pair:ident :
         $(
             $($rules:ident)|+ $([$(.. $v1:ident ,)? $($nonterm:ident $(: $ty:ty)?),* $(, .. $v2:ident)?] -> $out:expr);+ ;
         )*
     ) => {
         use Rule::*;
-        $(
-            let $s = $pair.as_str();
-        )?
         let pairs = $pair.clone().into_inner().collect::<Vec<_>>();
         let rule = $pair.as_rule();
-        #[allow(unreachable_patterns)]
-        #[allow(unused_mut)]
+        #[allow(warnings)]
         #[allow(clippy::all)]
         match rule {
             $(
