@@ -104,9 +104,11 @@ impl ASTNode for DType {
                             const_sized | sized => {
                                 let size_expr = ext.into_inner().last().unwrap();
                                 let size_expr = Expr::parse(size_expr);
-                                let size = size_expr.evaluate_word();
-
-                                Array(size, Box::new(base))
+                                if let Some(size) = size_expr.const_arithmetic_expr() {
+                                    Array(size as u32, Box::new(base))
+                                } else {
+                                    base.pointer()
+                                }
                              },
                              params => {
                                  let param_types = ext.into_inner().map(Self::parse).collect();

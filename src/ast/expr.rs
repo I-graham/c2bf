@@ -67,6 +67,8 @@ impl ASTNode for Expr {
                         Op::Sub => Sub,
                         Op::Mul => Mul,
                         Op::Div => Div,
+
+                        _ => unreachable!(),
                     };
 
                     arg.compile(context, stream);
@@ -78,14 +80,35 @@ impl ASTNode for Expr {
 }
 
 impl Expr {
-    // For constant expressions
-    pub fn evaluate_word(&self) -> u32 {
-        let mut code = vec![];
-        self.compile(&CompileContext::default(), &mut code);
+    pub fn const_arithmetic_expr(&self) -> Option<u64> {
+        use Expr::*;
+        match self {
+            ConstW(v) => Some(*v as u64),
+            Assoc(expr, items) => {
+                let mut e_val = expr.const_arithmetic_expr()?;
+                for (op, e) in items {
+                    let operand = e.const_arithmetic_expr()?;
+                    e_val = match op {
+                        Op::Add => e_val + operand,
+                        Op::Sub => e_val - operand,
+                        Op::Mul => e_val * operand,
+                        Op::Div => e_val / operand,
 
-        let mut vm = StackMachine::default();
-        vm.exec(&code);
+                        _ => unreachable!(),
+                    };
+                }
 
-        vm.stack[0]
+                Some(e_val)
+            }
+            Unary(op, expr) => {
+                let e_val = expr.const_arithmetic_expr()?;
+                match op {
+                    Op::Not => Some(!e_val),
+                    _ => unreachable!(),
+                }
+            }
+            TypeSize(dtype) => Some(dtype.size() as u64),
+            Var(_) => None,
+        }
     }
 }

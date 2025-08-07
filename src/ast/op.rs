@@ -5,6 +5,7 @@ pub enum Op {
     Sub,
     Mul,
     Div,
+    Not,
 }
 
 impl ASTNode for Op {
@@ -15,6 +16,8 @@ impl ASTNode for Op {
             "-" => Sub,
             "*" => Mul,
             "/" => Div,
+
+            "!" => Not,
 
             s => unimplemented!("Unknown op `{}`", s),
         }
