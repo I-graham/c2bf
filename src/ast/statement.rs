@@ -1,16 +1,24 @@
 use super::*;
 
+type Label = String;
+
 pub enum Stmt {
+    Decl(Definition),
     ExprStmt(Expr),
-    Labeled(String, Box<Stmt>),
+    Labeled(Label, Box<Stmt>),
     Case(Expr, Box<Stmt>),
     Default(Box<Stmt>),
     SeqStmt(Vec<Stmt>),
     IfStmt(Expr, Box<Stmt>),
     IfElseStmt(Expr, Box<Stmt>, Box<Stmt>),
+    SwitchStmt(Expr, Box<Stmt>),
     While(Expr, Box<Stmt>),
     DoWhile(Box<Stmt>, Expr),
     For(Expr, Option<Expr>, Expr, Box<Stmt>),
+    Goto(Label),
+    Continue,
+    Break,
+    Return(Option<Expr>),
 }
 
 impl ASTNode for Stmt {
@@ -20,6 +28,9 @@ impl ASTNode for Stmt {
             pair:
 
             stmt
+            | selection_stmt
+            | iteration_stmt
+            | jump_stmt
                 [s] -> s;
 
             labeled_stmt
@@ -38,18 +49,31 @@ impl ASTNode for Stmt {
             expr_stmt
                 [e] -> ExprStmt(e);
 
-            selection_stmt
-                [e] -> e;
-
             if_stmt
                 [c, t] -> IfStmt(c, t);
                 [c, t, e] -> IfElseStmt(c,t,e);
+
+            switch_stmt
+                [e, s] -> SwitchStmt(e, s);
 
             while_loop
                 [e, s] -> While(e, s);
 
             do_loop
                 [s, e] -> DoWhile(s, e);
+
+            goto_stmt
+                [s] -> Goto(s);
+
+            continue_stmt
+                [] -> Continue;
+
+            break_stmt
+                [] -> Break;
+
+            return_stmt
+                []  -> Return(None);
+                [e] -> Return(Some(e));
         }
     }
 

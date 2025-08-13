@@ -2,7 +2,7 @@ use super::*;
 
 pub enum Expr {
     ConstW(u32),
-    Var(String),
+    Var(Ident),
     Assoc(Box<Expr>, Vec<(Op, Expr)>),
     Unary(Op, Box<Expr>),
     TypeSize(DType),
@@ -75,6 +75,8 @@ impl ASTNode for Expr {
                 [.. es,] -> {
                     Seq(es.map(Self::parse).collect())
                 };
+
+
         }
     }
 

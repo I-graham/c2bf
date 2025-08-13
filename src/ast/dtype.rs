@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(PartialEq, Eq, Clone)]
 pub enum DType {
     Void,
     U8,
@@ -14,6 +15,7 @@ pub enum DType {
     Double,
     Pointer(usize, Box<Self>), // Level of indirection + base type
     Array(u32, Box<DType>),
+    Unsized(Box<DType>),
     Function(Vec<DType>, Box<DType>),
 }
 
@@ -62,65 +64,6 @@ impl ASTNode for DType {
 
                     ty
                 };
-
-            abstract_declarator
-            | declarator
-                [decl] -> decl;
-                [p, d] -> {
-                    let Pointer(n, _) = p else {
-                        unreachable!()
-                    };
-
-                    Pointer(n, Box::new(d))
-                };
-
-            pointer
-                [.. ps,] -> {
-                    let level_of_indirection = ps.filter(|token|
-                        token.as_str() == "*"
-                    ).count();
-
-                    Pointer(level_of_indirection, Void.into())
-                };
-
-            direct_abstract_declarator
-            | direct_declarator
-                [.. exts,] -> {
-                    let mut exts : Vec<_> = exts.collect();
-
-                    let base_pair = &exts[0];
-                    let rule = base_pair.as_rule();
-
-                    let mut base = match rule {
-                        declarator | abstract_declarator => DType::parse(exts.remove(0)),
-
-                        IDENTIFIER | brackets | const_sized | sized | params => Void,
-                        r => unreachable!("{:?}", r),
-                    };
-
-                    for ext in exts {
-                        base = match ext.as_rule() {
-                            brackets | typequal => base.pointer(),
-                            const_sized | sized => {
-                                let size_expr = ext.into_inner().last().unwrap();
-                                let size_expr = Expr::parse(size_expr);
-                                if let Some(size) = size_expr.const_arithmetic_expr() {
-                                    Array(size as u32, Box::new(base))
-                                } else {
-                                    // VLA
-                                    base.pointer()
-                                }
-                             },
-                             params => {
-                                 let param_types = ext.into_inner().map(Self::parse).collect();
-
-                                 Function(param_types, Box::new(base))
-                             }
-                             r => unreachable!("{:?}", r),
-                        }
-                    }
-                    base
-                };
         }
     }
 }
@@ -145,12 +88,10 @@ impl DType {
         }
     }
 
-    fn change_base(&mut self, base: Self) {
+    pub fn change_base(&mut self, base: Self) {
         use DType::*;
         match self {
-            Array(_, b) => b.change_base(base),
-            Pointer(_, b) => b.change_base(base),
-            Function(_, r) => r.change_base(base),
+            Array(_, b) | Pointer(_, b) | Unsized(b) | Function(_, b) => b.change_base(base),
             _ => *self = base,
         }
     }
@@ -165,7 +106,7 @@ impl DType {
             U64 | S64 => 8,
             Float => 4,
             Double => 8,
-            Pointer(_, _) => 4,
+            Pointer(_, _) | Unsized(_) => 4,
             Array(n, dtype) => n * dtype.size(),
             Function(_, _) => unreachable!(),
         }

@@ -1,17 +1,21 @@
 use super::*;
 use pest::iterators::Pair;
 
+pub mod declarator;
+pub mod definition;
 pub mod dtype;
 pub mod expr;
 pub mod op;
 pub mod statement;
 
+pub use declarator::*;
+pub use definition::*;
 pub use dtype::*;
 pub use expr::*;
 pub use op::*;
 pub use statement::*;
 
-pub type Ident = &'static str;
+pub type Ident = String;
 
 pub trait ASTNode {
     fn parse(pair: Pair<Rule>) -> Self;

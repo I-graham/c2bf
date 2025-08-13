@@ -110,21 +110,25 @@ expr = {assign_expr ~ ("," ~ assign_expr)* }
 const_expr = { conditional_expr }
 
 declaration =
-	{ declaration_specifiers ~ ";"
-	| declaration_specifiers ~ init_declarator_list ~ ";"
+	{ typedef
+	| static_spec? ~ vdecl
 	}
 
-declaration_specifiers = {(storage_class_specifier | type_specifier | type_qualifier | "inline")+}
+vdecl = { ignored_specs ~ type_name ~ init_declarator_list ~ ";" }
 
-init_declarator_list = { init_declarator ~ ("," ~ init_declarator)* }
+ignored_specs = { (storage_class_specifier | type_qualifier | "inline")* } 
 
-init_declarator = { declarator ~ ("=" ~ initializer)* }
+static_spec = {"static"}
+
+typedef =  { "typedef" ~ type_name ~ declarator ~ ("," ~ declarator )* ~ ";" }
+
+init_declarator_list = { init_declarator ~ ("," ~ init_declarator_list)? }
+
+init_declarator = { declarator ~ ("=" ~ initializer)? }
 
 storage_class_specifier =
-	{ "typedef"
-	| "extern"
+	{ "extern"
 	| "static"
-	| "auto"
 	| "register"
 	}
 
@@ -208,17 +212,9 @@ pointer = { deref ~ (type_qualifier | deref)* }
 
 type_qualifier_list = { type_qualifier+ }
 
-parameter_type_list =
-	{ parameter_list ~ "," ~ "..."
-	| parameter_list
-	}
-
 parameter_list = { parameter_declaration ~ ("," ~ parameter_declaration)* }
 
-parameter_declaration =
-	{ named_param
-	| type_name
-	}
+parameter_declaration = _{ named_param | type_name }
 
 named_param = { specifier_qualifier_list ~ declarator }
 
@@ -271,10 +267,7 @@ compound_stmt = { "{" ~ (declaration | stmt)* ~ "}" }
 
 expr_stmt = { expr? ~ ";" }
 
-selection_stmt =
-	{ if_stmt
-	| switch_stmt
-	}
+selection_stmt = { if_stmt | switch_stmt }
 
 if_stmt     = { "if" ~ "(" ~ expr ~ ")" ~ ("expr" ~ stmt)? }
 switch_stmt = { "switch" ~ "(" ~ expr ~ ")" ~ stmt }
@@ -285,19 +278,15 @@ while_loop = { "while" ~ "(" ~ expr ~ ")" ~ stmt }
 do_loop    = {"do" ~ stmt ~ "while" ~ "(" ~ expr ~ ")" ~ ";" }
 for_loop   = { "for" ~ "(" ~ (expr_stmt | declaration) ~ expr? ~ ";" ~ expr? ~ ")" ~ stmt }
 
-jump_stmt =
-	{ "goto" ~ IDENTIFIER ~ ";"
-	| "continue" ~ ";"
-	| "break" ~ ";"
-	| "return" ~ ";"
-	| "return" ~ expr ~ ";"
-	}
+jump_stmt     = { goto_stmt | continue_stmt | break_stmt | return_stmt }
+
+goto_stmt     = { "goto" ~ IDENTIFIER ~ ";" }
+continue_stmt = { "continue" ~ ";" }
+break_stmt    = { "break" ~ ";" }
+return_stmt   = { "return" ~ ";" | "return" ~ expr ~ ";" }
 
 translation_unit = { external_declaration+ }
 
-external_declaration =
-	{ function_definition
-	| declaration
-	}
+external_declaration = { function_definition | declaration }
 
-function_definition = { declaration_specifiers ~ declarator ~ compound_stmt }
+function_definition = { ignored_specs ~ type_name ~ declarator ~ compound_stmt }
