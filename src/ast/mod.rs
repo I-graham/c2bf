@@ -6,6 +6,7 @@ pub mod definition;
 pub mod dtype;
 pub mod expr;
 pub mod op;
+pub mod program;
 pub mod statement;
 
 pub use declarator::*;
@@ -13,6 +14,7 @@ pub use definition::*;
 pub use dtype::*;
 pub use expr::*;
 pub use op::*;
+pub use program::*;
 pub use statement::*;
 
 pub type Ident = String;

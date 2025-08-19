@@ -1,18 +1,18 @@
 use super::*;
 
-pub enum Definition {
+pub enum Defn {
     Struct(DType, Option<Ident>),
     Union(DType, Option<Ident>),
     Enum(DType, Option<Ident>),
     TypeDef(DType, Vec<Declarator>),
     Vars(bool, DType, Vec<(Declarator, Option<Expr>)>), // bool indicates whether decl is static
-    FDef(DType, Vec<ParamDecl>, Box<Stmt>),
+    FDef(Ident, DType, Vec<ParamDecl>, Box<Stmt>),
 }
 
-impl ASTNode for Definition {
+impl ASTNode for Defn {
     fn parse(pair: Pair<Rule>) -> Self {
         use Declarator::*;
-        use Definition::*;
+        use Defn::*;
         parser_rule! {
             pair:
 
@@ -25,7 +25,7 @@ impl ASTNode for Definition {
                         unreachable!()
                     };
 
-                    FDef(ty, args, Box::new(body))
+                    FDef(name, ty, args, Box::new(body))
                 };
 
             declaration
@@ -65,9 +65,9 @@ impl ASTNode for Definition {
     }
 }
 
-impl Definition {
+impl Defn {
     fn make_static(&mut self) {
-        use Definition::*;
+        use Defn::*;
         match self {
             Vars(s, _, _) => *s = true,
             FDef(_, _, _) => (),
@@ -76,7 +76,7 @@ impl Definition {
     }
 
     fn change_base_ty(&mut self, ty: DType) {
-        use Definition::*;
+        use Defn::*;
         match self {
             Vars(_, d, _) => *d = ty,
             FDef(t, _, _) => *t = ty,
@@ -85,7 +85,7 @@ impl Definition {
     }
 
     fn add_def(&mut self, o: Self) {
-        use Definition::*;
+        use Defn::*;
         match (self, o) {
             (Vars(_, _, ds), Vars(_, _, mut d)) if d.len() == 1 => {
                 let d = d.remove(0);

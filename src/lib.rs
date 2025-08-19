@@ -8,7 +8,7 @@ pub use stack_machine::*;
 
 use pest::Parser;
 
-type Base = Definition;
+type Base = Defn;
 
 pub fn exec_file(filename: &str) {
     let file = &std::fs::read_to_string(filename).unwrap();

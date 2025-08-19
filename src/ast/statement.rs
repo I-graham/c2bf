@@ -3,7 +3,7 @@ use super::*;
 type Label = String;
 
 pub enum Stmt {
-    Decl(Definition),
+    Decl(Defn),
     ExprStmt(Expr),
     Labeled(Label, Box<Stmt>),
     Case(Expr, Box<Stmt>),
