@@ -2,9 +2,7 @@ WHITESPACE = _{ " " | "\t" | NEWLINE }
 
 CONSTANT = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
 
-IDENTIFIER = @{
-  ASCII_ALPHANUMERIC+
-}
+IDENTIFIER = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")+ }
 
 primary_expr =
 	{ CONSTANT
@@ -114,11 +112,11 @@ declaration =
 	| static_spec? ~ vdecl
 	}
 
-vdecl = { ignored_specs ~ type_name ~ init_declarator_list ~ ";" }
+vdecl = { ignored_specs? ~ type_name ~ init_declarator_list ~ ";" }
 
 ignored_specs = { (storage_class_specifier | type_qualifier | "inline")* } 
 
-static_spec = {"static"}
+static_spec = { "static" }
 
 typedef =  { "typedef" ~ type_name ~ declarator ~ ("," ~ declarator )* ~ ";" }
 
@@ -144,7 +142,6 @@ type_specifier =
 	| "unsigned"
 	| struct_or_union_specifier
 	| enum_specifier
-	| IDENTIFIER
 	}
 
 struct_or_union_specifier =
@@ -223,6 +220,7 @@ identifier_list = { IDENTIFIER ~ ("," ~ IDENTIFIER)* }
 type_name =
 	{ specifier_qualifier_list ~ abstract_declarator
 	| specifier_qualifier_list
+	| IDENTIFIER
 	}
 
 abstract_declarator =
@@ -285,7 +283,7 @@ continue_stmt = { "continue" ~ ";" }
 break_stmt    = { "break" ~ ";" }
 return_stmt   = { "return" ~ ";" | "return" ~ expr ~ ";" }
 
-translation_unit = { external_declaration+ }
+translation_unit = { SOI ~ external_declaration+ ~ EOI }
 
 external_declaration = { function_definition | declaration }
 

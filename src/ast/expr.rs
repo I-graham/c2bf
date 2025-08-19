@@ -10,16 +10,18 @@ pub enum Expr {
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),
     Assign(Box<Expr>, Op, Box<Expr>),
     Seq(Vec<Expr>),
+    InitList(Vec<Expr>),
 }
 
 impl ASTNode for Expr {
     fn parse(pair: Pair<Rule>) -> Self {
         use Expr::*;
+        let s = pair.as_str();
         parser_rule! {
             pair:
 
-            IDENTIFIER [s] -> Var(s);
-            CONSTANT [s:String] -> ConstW(s.parse::<u32>().unwrap());
+            IDENTIFIER [] -> Var(s.into());
+            CONSTANT [] -> ConstW(s.parse::<u32>().unwrap());
 
             primary_expr
                 [e] -> e;
@@ -77,6 +79,11 @@ impl ASTNode for Expr {
                 };
 
 
+            initializer
+                [e] -> e;
+
+            initializer_list
+                [.. es,] -> InitList(es.map(Self::parse).collect());
         }
     }
 

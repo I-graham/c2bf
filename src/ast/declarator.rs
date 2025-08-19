@@ -47,8 +47,8 @@ impl ASTNode for Declarator {
 
                     let mut base = match rule {
                         declarator | abstract_declarator => Self::parse(exts.remove(0)),
-
-                        IDENTIFIER | brackets | const_sized | sized | params => Abstract,
+                        IDENTIFIER => Var((exts.remove(0).as_str().into())),
+                        brackets | const_sized | sized | params => Abstract,
                         r => unreachable!("{:?}", r),
                     };
 

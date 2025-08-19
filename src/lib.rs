@@ -8,12 +8,12 @@ pub use stack_machine::*;
 
 use pest::Parser;
 
-type Base = Expr;
+type Base = Definition;
 
 pub fn exec_file(filename: &str) {
     let file = &std::fs::read_to_string(filename).unwrap();
 
-    let pair = CParser::parse(Rule::type_size_expr, file)
+    let pair = CParser::parse(Rule::declaration, file)
         .unwrap()
         .next()
         .unwrap();
