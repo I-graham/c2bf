@@ -13,7 +13,7 @@ type Base = Definition;
 pub fn exec_file(filename: &str) {
     let file = &std::fs::read_to_string(filename).unwrap();
 
-    let pair = CParser::parse(Rule::declaration, file)
+    let pair = CParser::parse(Rule::translation_unit, file)
         .unwrap()
         .next()
         .unwrap();
