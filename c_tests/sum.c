@@ -1,6 +1,5 @@
-int main() {
-  int a = 5;
-  int b = 10;
-  int c = a + b;
-  show(c);
-}
+int a = 1;
+int b = 2;
+int c = a + b;
+
+int main() {}

@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub enum Expr {
     ConstW(u32),
     Var(Ident),
@@ -87,15 +88,15 @@ impl ASTNode for Expr {
         }
     }
 
-    fn compile(&self, context: &CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
         use StackInst::*;
         match self {
             Self::ConstW(v) => stream.push(PushW(*v)),
-            Self::Var(_) => todo!(),
+            Self::Var(v) => ctxt.push_var(v, stream),
             Self::Unary(_op, _e) => todo!(),
             Self::TypeSize(ty) => stream.push(PushW(ty.size())),
             Self::Assoc(head, args) => {
-                head.compile(context, stream);
+                head.compile(ctxt, stream);
 
                 for (op, arg) in args {
                     let op = match op {
@@ -107,7 +108,7 @@ impl ASTNode for Expr {
                         _ => unreachable!(),
                     };
 
-                    arg.compile(context, stream);
+                    arg.compile(ctxt, stream);
                     stream.push(op);
                 }
             }

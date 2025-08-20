@@ -77,7 +77,7 @@ impl ASTNode for Stmt {
         }
     }
 
-    fn compile(&self, context: &CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, context: &mut CompileContext, stream: &mut Vec<StackInst>) {
         match self {
             Self::ExprStmt(expr) => expr.compile(context, stream),
 

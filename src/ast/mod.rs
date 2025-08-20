@@ -22,13 +22,10 @@ pub type Ident = String;
 pub trait ASTNode {
     fn parse(pair: Pair<Rule>) -> Self;
 
-    fn compile(&self, _context: &CompileContext, _stream: &mut Vec<StackInst>) {
+    fn compile(&self, _context: &mut CompileContext, _stream: &mut Vec<StackInst>) {
         unimplemented!()
     }
 }
-
-#[derive(Default)]
-pub struct CompileContext {}
 
 // Useful for trashing inputs
 impl ASTNode for () {
@@ -47,7 +44,7 @@ impl<T: ASTNode> ASTNode for Box<T> {
         T::parse(pair).into()
     }
 
-    fn compile(&self, context: &CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, context: &mut CompileContext, stream: &mut Vec<StackInst>) {
         (**self).compile(context, stream);
     }
 }

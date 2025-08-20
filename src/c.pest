@@ -112,9 +112,9 @@ declaration =
 	| static_spec? ~ vdecl
 	}
 
-vdecl = { ignored_specs? ~ type_name ~ init_declarator_list ~ ";" }
+vdecl = { ignored_specs ~ type_name ~ init_declarator_list ~ ";" }
 
-ignored_specs = { (storage_class_specifier | type_qualifier | "inline")+ } 
+ignored_specs = { (storage_class_specifier | type_qualifier | "inline")* }
 
 static_spec = { "static" }
 
@@ -287,4 +287,4 @@ translation_unit = { SOI ~ external_declaration+ ~ EOI }
 
 external_declaration = { function_definition | declaration }
 
-function_definition = { ignored_specs? ~ type_name ~ declarator ~ compound_stmt }
+function_definition = { ignored_specs ~ type_name ~ declarator ~ compound_stmt }

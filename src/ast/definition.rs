@@ -28,6 +28,9 @@ impl ASTNode for Defn {
                     FDef(name, ty, args, Box::new(body))
                 };
 
+            external_declaration
+                [e] -> e;
+
             declaration
                 [t] -> t;
                 [s:(), d:Self] -> {
@@ -70,7 +73,7 @@ impl Defn {
         use Defn::*;
         match self {
             Vars(s, _, _) => *s = true,
-            FDef(_, _, _) => (),
+            FDef(_, _, _, _) => (),
             _ => unreachable!(),
         }
     }
@@ -79,7 +82,7 @@ impl Defn {
         use Defn::*;
         match self {
             Vars(_, d, _) => *d = ty,
-            FDef(t, _, _) => *t = ty,
+            FDef(_, t, _, _) => *t = ty,
             _ => unreachable!(),
         }
     }

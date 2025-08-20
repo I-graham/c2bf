@@ -1,14 +1,14 @@
 pub mod ast;
 pub mod parser;
-pub mod stack_machine;
+pub mod stack;
 
 pub use ast::*;
 pub use parser::*;
-pub use stack_machine::*;
+pub use stack::*;
 
 use pest::Parser;
 
-type Base = Defn;
+type Base = Program;
 
 pub fn exec_file(filename: &str) {
     let file = &std::fs::read_to_string(filename).unwrap();
@@ -20,11 +20,11 @@ pub fn exec_file(filename: &str) {
 
     let parsed = Base::parse(pair);
 
-    let ctxt = CompileContext::default();
+    let mut ctxt = CompileContext::default();
     let mut code = vec![];
 
-    parsed.compile(&ctxt, &mut code);
-    code.push(StackInst::Print);
+    parsed.compile(&mut ctxt, &mut code);
+    code.push(StackInst::ShowI32);
 
     exec_stack_program(&code);
 }
