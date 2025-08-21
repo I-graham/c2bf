@@ -2,9 +2,12 @@ use super::*;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum StackInst {
+    // Misc. / Debug
     #[default]
-    // Preparation
     Nop,
+    Comment(&'static str),
+
+    // Preparation
     PushW(Word),
 
     // ALU
@@ -17,6 +20,11 @@ pub enum StackInst {
     StackAlloc,
     GlobalStore,
     GlobalRead,
+
+    // Control Flow
+    Label(Word),
+    Goto,
+    Exit,
 
     // IO
     ShowI32,

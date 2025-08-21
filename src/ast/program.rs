@@ -49,10 +49,11 @@ impl ASTNode for Program {
         Self { funs, vars, order }
     }
 
-    fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, ctxt: &mut CompileContext, stream: &mut StackProgram) {
         use StackInst::*;
 
-        for (f, _) in self.funs.iter() {
+        // Declarations
+        for f in self.funs.keys() {
             ctxt.fdecl(f.clone());
         }
 
@@ -67,9 +68,18 @@ impl ASTNode for Program {
             let (_, _, e) = &self.vars[v];
             let def = e.clone().unwrap();
 
+            stream.push(Comment(v.clone().leak()));
             def.compile(ctxt, stream);
             ctxt.push_addr(v, stream);
             stream.push(GlobalStore);
+        }
+
+        ctxt.call_fn(&"main".into(), &vec![], stream);
+        stream.push(Exit);
+
+        // Definitions
+        for (f, (_, ps, b)) in &self.funs {
+            ctxt.fdef(f, ps, b, stream);
         }
     }
 }

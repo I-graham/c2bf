@@ -107,7 +107,7 @@ impl Declarator {
     pub fn pointed(&self) -> Self {
         use Declarator::*;
         match self {
-            Deref(n, d) => Deref(n + 1, d.clone().into()),
+            Deref(n, d) => Deref(n + 1, d.clone()),
             _ => Deref(1, self.clone().into()),
         }
     }
