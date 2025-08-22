@@ -59,7 +59,7 @@ impl ASTNode for Program {
 
         for v in &self.order {
             let (_, ty, _) = &self.vars[v];
-            ctxt.global_vdecl(v.clone(), ty.clone());
+            ctxt.global_decl(v, ty);
         }
 
         stream.extend(&[PushW(ctxt.global_offset as Word), StackAlloc]);

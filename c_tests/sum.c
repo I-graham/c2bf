@@ -3,5 +3,5 @@ int b = 2;
 int c = a + b;
 
 int main() {
-  show(c << 2);
+  int d = c + 1;
 }

@@ -24,7 +24,8 @@ pub fn exec_file(filename: &str) {
     let mut code = vec![];
 
     parsed.compile(&mut ctxt, &mut code);
-    code.push(StackInst::ShowI32);
+
+    dbg!(&code);
 
     exec_stack_program(&code);
 }

@@ -2,19 +2,16 @@ use super::*;
 
 use std::collections::*;
 
-pub enum Location {
-    Global(Word),
-    Local(Word),
-    Function(Word),
-}
-
 pub type Label = Word;
 
 #[derive(Default)]
 pub struct CompileContext {
     pub global_offset: usize,
+    local_offset: usize,
     label_count: Label,
-    scope: HashMap<Ident, Location>,
+    globals: HashMap<Ident, Word>,
+    locals: HashMap<Ident, Word>,
+    funcs: HashMap<Ident, Label>,
 }
 
 impl CompileContext {
@@ -25,28 +22,30 @@ impl CompileContext {
 
     pub fn fdecl(&mut self, f: Ident) -> Label {
         let label = self.label();
-        let loc = Location::Function(label);
-        self.scope.insert(f, loc);
+        self.funcs.insert(f, label);
         label
     }
 
-    pub fn global_vdecl(&mut self, v: Ident, ty: DType) {
-        use Location::*;
-
+    pub fn global_decl(&mut self, v: &Ident, ty: &DType) {
         let size = ty.size() as usize;
         let bytes = size.max(WORD_SIZE); // always allocate at least one word;
         let words = (bytes / WORD_SIZE) + if bytes % WORD_SIZE != 0 { 1 } else { 0 }; // How many words to allocate
 
-        self.scope.insert(v, Global(self.global_offset as Word));
+        self.globals.insert(v.clone(), self.global_offset as Word);
         self.global_offset += words;
     }
 
-    pub fn lookup_fn(&mut self, v: &Ident) -> Label {
-        let Location::Function(label) = self.scope[v] else {
-            unreachable!()
-        };
+    pub fn local_decl(&mut self, v: &Ident, ty: &DType) {
+        let size = ty.size() as usize;
+        let bytes = size.max(WORD_SIZE); // always allocate at least one word;
+        let words = (bytes / WORD_SIZE) + if bytes % WORD_SIZE != 0 { 1 } else { 0 }; // How many words to allocate
 
-        label
+        self.locals.insert(v.clone(), self.local_offset as Word);
+        self.local_offset += words;
+    }
+
+    pub fn fn_label(&mut self, v: &Ident) -> Label {
+        self.funcs[v]
     }
 
     pub fn call_fn(&mut self, v: &Ident, args: &Vec<Expr>, stream: &mut StackProgram) {
@@ -55,37 +54,48 @@ impl CompileContext {
         }
         let ret_label = self.label();
 
+        // TODO: Incorporate stack pointer to allow indirection in BF (esp. for globals)
         use StackInst::*;
         stream.extend(&[
             PushW(ret_label),
-            PushW(self.lookup_fn(v)),
+            PushW(self.fn_label(v)),
             Goto,
             Label(ret_label),
         ]);
     }
 
     pub fn push_addr(&self, v: &Ident, stream: &mut StackProgram) {
-        use Location::*;
         use StackInst::*;
-        let code = match self.scope[v] {
-            Global(w) => &[PushW(w)],
-            Local(_) => todo!(),
-            Function(_) => todo!(),
-        };
+        if let Some(&addr) = self.globals.get(v) {
+            stream.push(PushW(addr));
+            return;
+        }
 
-        stream.extend(code);
+        unreachable!();
     }
 
     pub fn push_var(&self, v: &Ident, stream: &mut StackProgram) {
-        use Location::*;
         use StackInst::*;
 
-        match self.scope[v] {
-            Global(_) => {
-                self.push_addr(v, stream);
-                stream.push(GlobalRead);
-            }
-            _ => todo!(),
+        if let Some(&addr) = self.globals.get(v) {
+            stream.extend(&[PushW(addr), GlobalRead]);
+            return;
+        }
+
+        unreachable!();
+    }
+
+    pub fn store(&self, v: &Ident, stream: &mut StackProgram) {
+        use StackInst::*;
+
+        if let Some(&addr) = self.locals.get(v) {
+            stream.extend(&[PushW(addr), LocalStore]);
+            return;
+        }
+
+        if let Some(&addr) = self.globals.get(v) {
+            stream.extend(&[PushW(addr), GlobalStore]);
+            return;
         }
     }
 
@@ -96,19 +106,38 @@ impl CompileContext {
         body: &Stmt,
         stream: &mut StackProgram,
     ) {
+        // New Stack Frame
+        self.locals.clear();
+        self.local_offset = 0;
+
+        // Param Declarations
         use StackInst::*;
-        for _ in params {
-            todo!(); // Read in parameters, somehow
+        for (pty, pname) in params {
+            let Some(pname) = pname else { continue };
+
+            self.local_decl(pname, pty);
         }
 
-        let label = self.lookup_fn(f);
+        // Allocate space for all variables
+        for (vty, v) in body.vars() {
+            let Some(v) = v else { continue };
 
-        stream.push(Comment(f.clone().leak()));
-        stream.push(Label(label));
+            self.local_decl(&v, &vty);
+        }
+
+        let label = self.fn_label(f);
+        let frame_size = self.local_offset as Word;
+
+        stream.extend(&[
+            Comment(f.clone().leak()),
+            Label(label),
+            PushW(frame_size),
+            StackAlloc,
+        ]);
 
         body.compile(self, stream);
 
         // Return to caller, which should have pushed a return label
-        stream.push(Goto);
+        stream.extend(&[PushW(frame_size), StackDealloc, Goto]);
     }
 }

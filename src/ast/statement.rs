@@ -3,7 +3,7 @@ use super::*;
 type Label = String;
 
 pub enum Stmt {
-    Decl(Defn),
+    DefnStmt(Defn),
     ExprStmt(Expr),
     Labeled(Label, Box<Stmt>),
     Case(Expr, Box<Stmt>),
@@ -33,6 +33,9 @@ impl ASTNode for Stmt {
             | jump_stmt
                 [s] -> s;
 
+            declaration
+                [d] -> DefnStmt(d);
+
             labeled_stmt
                 [s] -> s;
                 [l, s] -> Labeled(l, s);
@@ -43,7 +46,7 @@ impl ASTNode for Stmt {
             default_stmt
                 [s] -> Default(s);
 
-            compount_stmt
+            compound_stmt
                 [.. ss,] -> SeqStmt(ss.map(Self::parse).collect());
 
             expr_stmt
@@ -77,11 +80,66 @@ impl ASTNode for Stmt {
         }
     }
 
-    fn compile(&self, context: &mut CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
+        use Stmt::*;
         match self {
-            Self::ExprStmt(expr) => expr.compile(context, stream),
+            DefnStmt(d) => {
+                let Defn::Vars(false, _, defs) = d else {
+                    unreachable!();
+                };
+
+                for (decl, def) in defs {
+                    let Some(def) = def else { continue };
+                    let Some(v) = decl.get_name() else { continue };
+
+                    def.compile(ctxt, stream);
+                    ctxt.store(&v, stream);
+                }
+            }
+            ExprStmt(expr) => {
+                expr.compile(ctxt, stream);
+                stream.push(StackInst::DiscardW);
+            }
+            SeqStmt(stmts) => {
+                for stmt in stmts {
+                    stmt.compile(ctxt, stream);
+                }
+            }
 
             _ => todo!(),
+        }
+    }
+}
+
+impl Stmt {
+    pub fn vars(&self) -> Vec<(DType, Option<Ident>)> {
+        use Stmt::*;
+        match self {
+            DefnStmt(d) => {
+                let Defn::Vars(_, base_ty, decls) = d else {
+                    unreachable!()
+                };
+
+                decls
+                    .iter()
+                    .map(|(d, _)| (d.set_type(base_ty.clone()), d.get_name()))
+                    .collect()
+            }
+            Goto(_) | Continue | Break | Return(_) | ExprStmt(_) => vec![],
+            SwitchStmt(_, stmt)
+            | While(_, stmt)
+            | DoWhile(stmt, _)
+            | For(_, _, _, stmt)
+            | IfStmt(_, stmt)
+            | Default(stmt)
+            | Case(_, stmt)
+            | Labeled(_, stmt) => stmt.vars(),
+            SeqStmt(stmts) => stmts.iter().flat_map(|s| s.vars()).collect(),
+            IfElseStmt(_, s1, s2) => {
+                let mut vs = s1.vars();
+                vs.extend(s2.vars());
+                vs
+            }
         }
     }
 }

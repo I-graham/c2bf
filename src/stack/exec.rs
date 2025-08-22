@@ -32,6 +32,9 @@ impl StackMachine {
             match inst {
                 Nop | Label(_) | Comment(_) => (),
                 PushW(b) => self.stack.push(b),
+                DiscardW => {
+                    self.stack.pop();
+                }
                 ShowI32 => println!("{}", self.stack.last().unwrap()),
 
                 StackAlloc => {
@@ -39,22 +42,41 @@ impl StackMachine {
                     let len = self.stack.len();
                     self.stack.resize(len + size, 0);
                 }
+                StackDealloc => {
+                    let size = self.stack.pop().unwrap() as usize;
+                    let len = self.stack.len();
+                    self.stack.resize(len - size, 0);
+                }
                 GlobalRead => {
                     let addr = self.stack.pop().expect("Global read on empty stack");
                     let value = self
                         .stack
                         .get(addr as usize)
-                        .expect("Address does not exist.");
+                        .expect("Global address does not exist.");
                     self.stack.push(*value)
                 }
                 GlobalStore => {
-                    let addr = self.stack.pop().expect("Global Store on empty stack");
-                    let word = self.stack.pop().expect("Global Store on empty stack");
+                    let addr = self.stack.pop().expect("Global store on empty stack");
+                    let word = self.stack.pop().expect("Global store on empty stack");
 
                     *self
                         .stack
                         .get_mut(addr as usize)
-                        .expect("Address does not exist.") = word;
+                        .expect("Global address does not exist.") = word;
+                }
+                LocalRead => {
+                    let addr = self.stack.pop().expect("Local read on empty stack");
+                    let addr = self.stack.len() - 1 - addr as usize;
+                    let value = *self.stack.get(addr).expect("Address does not exist");
+
+                    self.stack.push(value);
+                }
+                LocalStore => {
+                    let addr = self.stack.pop().expect("Local store on empty stack");
+                    let word = self.stack.pop().expect("Local store on empty stack");
+                    let addr = self.stack.len() - 1 - addr as usize;
+
+                    *self.stack.get_mut(addr).expect("Address does not exist") = word;
                 }
 
                 Goto => {
