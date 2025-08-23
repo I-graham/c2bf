@@ -35,7 +35,7 @@ impl StackMachine {
                 DiscardW => {
                     self.stack.pop();
                 }
-                ShowI32 => println!("{}", self.stack.last().unwrap()),
+                PrintI32 => println!("{}", self.stack.pop().unwrap()),
 
                 StackAlloc => {
                     let size = self.stack.pop().unwrap() as usize;

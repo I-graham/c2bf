@@ -12,11 +12,11 @@ primary_expr =
 	}
 
 postfix_expr = { primary_expr ~ postfixture* }
-	postfixture = {index | call | field | pfield | inc | dec}
+	postfixture = _{ index | call | field | arrow | inc | dec }
 	index = { "[" ~ expr ~ "]" }
 	call = { "(" ~ ")" | "(" ~ assign_expr ~ ("," ~ assign_expr)* ~ ")" }
 	field = { "." ~ IDENTIFIER }
-	pfield = { "->" ~ IDENTIFIER }
+	arrow = { "->" ~ IDENTIFIER }
 	inc = { "++" }
 	dec = { "--" }
 	
@@ -193,7 +193,10 @@ declarator =
 	| direct_declarator
 	}
 
-direct_declarator = { (IDENTIFIER | "(" ~ declarator ~ ")") ~ ( sized | brackets | params | typequal )* }
+direct_declarator = 
+	{ IDENTIFIER ~ (sized | brackets | params | typequal)*
+	| "(" ~ declarator ~ ")" ~ (sized | brackets | params | typequal)+
+	}
 	brackets = { "[" ~ "*"? ~ "]" }
 	params   = { "(" ~ ( parameter_list )? ~ ")"}
 	typequal =  { "[" ~ type_qualifier_list ~ "*"? ~ "]" }
@@ -246,11 +249,14 @@ initializer_list = { initializer ~ ("," ~ initializer)* }
 stmt =
 	{ labeled_stmt
 	| compound_stmt
-	| expr_stmt
 	| selection_stmt
 	| iteration_stmt
 	| jump_stmt
+	| print_stmt
+	| expr_stmt
 	}
+
+print_stmt = { "print" ~ "(" ~ expr ~ ")" ~ ";"}
 
 labeled_stmt =
 	{ IDENTIFIER ~ ":" ~ stmt

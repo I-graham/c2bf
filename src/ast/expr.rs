@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     ConstW(u32),
     Var(Ident),
@@ -12,6 +12,12 @@ pub enum Expr {
     Assign(Box<Expr>, Op, Box<Expr>),
     Seq(Vec<Expr>),
     InitList(Vec<Expr>),
+    Indexed(Box<Expr>, Box<Expr>),
+    FnCall(Box<Expr>, Vec<Expr>),
+    Field(Box<Expr>, Ident),
+    Arrow(Box<Expr>, Ident),
+    Inc(Box<Expr>),
+    Dec(Box<Expr>),
 }
 
 impl ASTNode for Expr {
@@ -29,6 +35,28 @@ impl ASTNode for Expr {
 
             postfix_expr // TODO
                 [e] -> e;
+                [p, ..fixtures] -> {
+                    let mut base = p;
+
+                    for fixture in fixtures {
+                        let boxed = Box::new(base);
+
+                        base = match fixture.as_rule() {
+                            index => Indexed(boxed, Self::parse(fixture).into()),
+                            field => Field(boxed, fixture.as_str().into()),
+                            arrow => Arrow(boxed, fixture.as_str().into()),
+                            inc => Inc(boxed),
+                            dec => Dec(boxed),
+                            call => {
+                                let args = fixture.into_inner().map(Expr::parse).collect();
+                                FnCall(boxed, args)
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+
+                    base
+                };
 
             const_expr
                 [e] -> e;
@@ -112,8 +140,20 @@ impl ASTNode for Expr {
                     stream.push(op);
                 }
             }
+            Self::FnCall(func, args) => {
+                ctxt.call_fn(func, args, stream);
+            }
+            Self::Seq(seqs) => {
+                let mut seqs = seqs.iter();
+                seqs.next().unwrap().compile(ctxt, stream);
 
-            _ => todo!(),
+                for seq in seqs {
+                    stream.push(DiscardW);
+                    seq.compile(ctxt, stream);
+                }
+            }
+
+            e => todo!("Unsupported expr {:?}", e),
         };
     }
 }

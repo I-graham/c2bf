@@ -48,7 +48,7 @@ impl CompileContext {
         self.funcs[v]
     }
 
-    pub fn call_fn(&mut self, v: &Ident, args: &Vec<Expr>, stream: &mut StackProgram) {
+    pub fn call_fn(&mut self, v: &Expr, args: &Vec<Expr>, stream: &mut StackProgram) {
         for arg in args {
             arg.compile(self, stream);
         }
@@ -56,12 +56,9 @@ impl CompileContext {
 
         // TODO: Incorporate stack pointer to allow indirection in BF (esp. for globals)
         use StackInst::*;
-        stream.extend(&[
-            PushW(ret_label),
-            PushW(self.fn_label(v)),
-            Goto,
-            Label(ret_label),
-        ]);
+        stream.push(PushW(ret_label));
+        v.compile(self, stream);
+        stream.extend(&[Goto, Label(ret_label)]);
     }
 
     pub fn push_addr(&self, v: &Ident, stream: &mut StackProgram) {
@@ -82,6 +79,16 @@ impl CompileContext {
             return;
         }
 
+        if let Some(&addr) = self.funcs.get(v) {
+            stream.push(PushW(addr));
+            return;
+        }
+
+        if let Some(&addr) = self.locals.get(v) {
+            stream.extend(&[PushW(addr), LocalRead]);
+            return;
+        }
+
         unreachable!();
     }
 
@@ -97,6 +104,8 @@ impl CompileContext {
             stream.extend(&[PushW(addr), GlobalStore]);
             return;
         }
+
+        unreachable!();
     }
 
     pub fn fdef(

@@ -74,7 +74,8 @@ impl ASTNode for Program {
             stream.push(GlobalStore);
         }
 
-        ctxt.call_fn(&"main".into(), &vec![], stream);
+        // Call main()
+        ctxt.call_fn(&Expr::Var("main".into()), &vec![], stream);
         stream.push(Exit);
 
         // Definitions

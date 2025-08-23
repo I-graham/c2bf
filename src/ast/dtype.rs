@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum DType {
     Void,
     U8,

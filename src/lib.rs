@@ -27,5 +27,7 @@ pub fn exec_file(filename: &str) {
 
     dbg!(&code);
 
+    println!("\nExecution:\n");
+
     exec_stack_program(&code);
 }

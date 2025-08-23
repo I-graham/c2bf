@@ -19,6 +19,7 @@ pub enum Stmt {
     Continue,
     Break,
     Return(Option<Expr>),
+    Print(Expr),
 }
 
 impl ASTNode for Stmt {
@@ -48,6 +49,9 @@ impl ASTNode for Stmt {
 
             compound_stmt
                 [.. ss,] -> SeqStmt(ss.map(Self::parse).collect());
+
+            print_stmt
+                [e] -> Print(e);
 
             expr_stmt
                 [e] -> ExprStmt(e);
@@ -106,6 +110,10 @@ impl ASTNode for Stmt {
                 }
             }
 
+            Print(expr) => {
+                expr.compile(ctxt, stream);
+                stream.push(StackInst::PrintI32);
+            }
             _ => todo!(),
         }
     }
@@ -125,7 +133,7 @@ impl Stmt {
                     .map(|(d, _)| (d.set_type(base_ty.clone()), d.get_name()))
                     .collect()
             }
-            Goto(_) | Continue | Break | Return(_) | ExprStmt(_) => vec![],
+            Print(_) | Goto(_) | Continue | Break | Return(_) | ExprStmt(_) => vec![],
             SwitchStmt(_, stmt)
             | While(_, stmt)
             | DoWhile(stmt, _)

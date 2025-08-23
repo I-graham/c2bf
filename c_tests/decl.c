@@ -1,3 +1,4 @@
 int main() {
-int variable = 5;
+  int a = 1;
+  show(a);
 }

@@ -3,5 +3,6 @@ int b = 2;
 int c = a + b;
 
 int main() {
-  int d = c + 1;
+  int d = c + 6;
+  print(d);
 }
