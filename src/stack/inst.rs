@@ -25,8 +25,8 @@ pub enum StackInst {
     StackDealloc,
     GlobalStore,
     GlobalRead,
-    LocalStore,
-    LocalRead,
+    LocalStore(usize), // Offset from top of stack
+    LocalRead(usize),  // Offset from top of stack
 
     // Control Flow
     Label(Word),
@@ -56,8 +56,8 @@ impl std::fmt::Debug for StackInst {
             StackDealloc => write!(f, "StackDealloc"),
             GlobalStore => write!(f, "GlobalStore"),
             GlobalRead => write!(f, "GlobalRead"),
-            LocalStore => write!(f, "LocalStore"),
-            LocalRead => write!(f, "LocalRead"),
+            LocalStore(d) => write!(f, "LocalStore({})", d),
+            LocalRead(d) => write!(f, "LocalRead({})", d),
             Label(l) => write!(f, "Label({})", l),
             Goto => write!(f, "Goto"),
             Exit => write!(f, "Exit"),
