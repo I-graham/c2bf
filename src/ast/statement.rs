@@ -15,7 +15,7 @@ pub enum Stmt {
     While(Expr, Box<Stmt>),
     DoWhile(Box<Stmt>, Expr),
     For(Expr, Option<Expr>, Expr, Box<Stmt>),
-    Goto(Label),
+    GotoStmt(Label),
     Continue,
     Break,
     Return(Option<Expr>),
@@ -70,7 +70,7 @@ impl ASTNode for Stmt {
                 [s, e] -> DoWhile(s, e);
 
             goto_stmt
-                [s] -> Goto(s);
+                [s] -> GotoStmt(s);
 
             continue_stmt
                 [] -> Continue;
@@ -85,6 +85,7 @@ impl ASTNode for Stmt {
     }
 
     fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
+        use StackInst::*;
         use Stmt::*;
         match self {
             DefnStmt(d) => {
@@ -102,7 +103,7 @@ impl ASTNode for Stmt {
             }
             ExprStmt(expr) => {
                 expr.compile(ctxt, stream);
-                stream.push(StackInst::DiscardW);
+                stream.push(DiscardW);
             }
             SeqStmt(stmts) => {
                 for stmt in stmts {
@@ -112,7 +113,22 @@ impl ASTNode for Stmt {
 
             Print(expr) => {
                 expr.compile(ctxt, stream);
-                stream.push(StackInst::PrintI32);
+                stream.push(PrintI32);
+            }
+
+            Return(e) => {
+                if let Some(expr) = e {
+                    expr.compile(ctxt, stream);
+                    stream.extend(&[
+                        CopyDown(ctxt.local_offset),
+                        PushW(ctxt.local_offset as Word),
+                        StackDealloc,
+                        SwapW,
+                        Goto,
+                    ]);
+                } else {
+                    stream.extend(&[PushW(ctxt.local_offset as Word), StackDealloc, Goto]);
+                }
             }
             _ => todo!(),
         }
@@ -133,7 +149,7 @@ impl Stmt {
                     .map(|(d, _)| (d.set_type(base_ty.clone()), d.get_name()))
                     .collect()
             }
-            Print(_) | Goto(_) | Continue | Break | Return(_) | ExprStmt(_) => vec![],
+            Print(_) | GotoStmt(_) | Continue | Break | Return(_) | ExprStmt(_) => vec![],
             SwitchStmt(_, stmt)
             | While(_, stmt)
             | DoWhile(stmt, _)

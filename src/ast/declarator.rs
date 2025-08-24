@@ -66,10 +66,10 @@ impl ASTNode for Declarator {
                                 }
                              },
                              params => {
-                                 let param_decls = ext.into_inner();
+                                 let param_list = ext.into_inner();
                                  let mut param_vec = vec![];
 
-                                 for param in param_decls {
+                                 for param in param_list {
                                      let mut pairs = param.into_inner();
                                      // Type of parameter
                                      let base_ty = DType::parse(pairs.next().unwrap());

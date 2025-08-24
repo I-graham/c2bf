@@ -7,7 +7,7 @@ pub type Label = Word;
 #[derive(Default)]
 pub struct CompileContext {
     pub global_offset: usize,
-    local_offset: usize,
+    pub local_offset: usize,
     label_count: Label,
     globals: HashMap<Ident, Word>,
     locals: HashMap<Ident, Word>,
@@ -49,16 +49,24 @@ impl CompileContext {
     }
 
     pub fn call_fn(&mut self, v: &Expr, args: &Vec<Expr>, stream: &mut StackProgram) {
+        let ret_label = self.label();
+
+        use StackInst::*;
+
+        // Push stack pointer & return address
+        stream.extend(&[
+            Debug(self.label() as _),
+            PushW(ret_label),
+            PushW(self.local_offset as Word),
+            LocalRead,
+        ]);
+
         for arg in args {
             arg.compile(self, stream);
         }
-        let ret_label = self.label();
 
-        // TODO: Incorporate stack pointer to allow indirection in BF (esp. for globals)
-        use StackInst::*;
-        stream.push(PushW(ret_label));
         v.compile(self, stream);
-        stream.extend(&[Goto, Label(ret_label)]);
+        stream.extend(&[Goto, Label(ret_label), Debug(self.label() as _)]);
     }
 
     pub fn push_addr(&self, v: &Ident, stream: &mut StackProgram) {
@@ -117,7 +125,7 @@ impl CompileContext {
     ) {
         // New Stack Frame
         self.locals.clear();
-        self.local_offset = 0;
+        self.local_offset = 1; // Include stack pointer in stack frame
 
         // Param Declarations
         use StackInst::*;
@@ -140,7 +148,7 @@ impl CompileContext {
         stream.extend(&[
             Comment(f.clone().leak()),
             Label(label),
-            PushW(frame_size),
+            PushW(frame_size - 1), // Stack pointer is already allocated
             StackAlloc,
         ]);
 

@@ -62,7 +62,10 @@ impl ASTNode for Program {
             ctxt.global_decl(v, ty);
         }
 
-        stream.extend(&[PushW(ctxt.global_offset as Word), StackAlloc]);
+        stream.extend(&[
+            PushW(ctxt.global_offset as Word),
+            StackAlloc, // Allocate space for globals
+        ]);
 
         for v in &self.order {
             let (_, _, e) = &self.vars[v];

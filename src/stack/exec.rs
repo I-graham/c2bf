@@ -30,12 +30,18 @@ impl StackMachine {
         loop {
             let inst = code[ip];
             match inst {
+                Debug(l) => {
+                    println!("Stack @ {}: {:?}", l, self.stack);
+                }
                 Nop | Label(_) | Comment(_) => (),
                 PushW(b) => self.stack.push(b),
                 DiscardW => {
                     self.stack.pop();
                 }
-                PrintI32 => println!("{}", self.stack.pop().unwrap()),
+                PrintI32 => {
+                    println!("{}", self.stack.pop().unwrap());
+                    println!("Stack: {:?}", self.stack);
+                }
 
                 StackAlloc => {
                     let size = self.stack.pop().unwrap() as usize;
@@ -47,6 +53,19 @@ impl StackMachine {
                     let len = self.stack.len();
                     self.stack.resize(len - size, 0);
                 }
+                CopyDown(d) => {
+                    let n = self.stack.len() - 1;
+                    let word = *self.stack.last().unwrap();
+                    self.stack[n - d] = word;
+                }
+                SwapW => {
+                    let a = self.stack.pop().unwrap();
+                    let b = self.stack.pop().unwrap();
+
+                    self.stack.push(a);
+                    self.stack.push(b);
+                }
+
                 GlobalRead => {
                     let addr = self.stack.pop().expect("Global read on empty stack");
                     let value = self

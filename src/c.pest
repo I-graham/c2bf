@@ -212,7 +212,7 @@ pointer = { deref ~ (type_qualifier | deref)* }
 
 type_qualifier_list = { type_qualifier+ }
 
-parameter_list = { parameter_declaration ~ ("," ~ parameter_declaration)* }
+parameter_list = _{ parameter_declaration ~ ("," ~ parameter_declaration)* }
 
 parameter_declaration = _{ named_param | type_name }
 

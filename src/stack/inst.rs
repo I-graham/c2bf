@@ -6,10 +6,13 @@ pub enum StackInst {
     #[default]
     Nop,
     Comment(&'static str),
+    Debug(usize),
 
     // Preparation
     PushW(Word),
     DiscardW,
+    CopyDown(usize), // Copy word into stack
+    SwapW,
 
     // ALU
     Add,
@@ -39,9 +42,12 @@ impl std::fmt::Debug for StackInst {
         use StackInst::*;
         match self {
             Nop => write!(f, "Nop"),
+            Debug(l) => write!(f, "Debug({})", l),
             Comment(c) => write!(f, "/* {} */", c),
             PushW(c) => write!(f, "PushW({})", c),
             DiscardW => write!(f, "DiscardW"),
+            CopyDown(d) => write!(f, "CopyDown({})", d),
+            SwapW => write!(f, "SwapW"),
             Add => write!(f, "Add"),
             Sub => write!(f, "Sub"),
             Mul => write!(f, "Mul"),
