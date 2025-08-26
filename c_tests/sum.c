@@ -7,7 +7,6 @@ int add() {
 }
 
 int main() {
-  int e;
   int d = add();
   print(d);
 }

@@ -4,12 +4,12 @@ use super::*;
 pub enum Expr {
     ConstW(u32),
     Var(Ident),
-    Assoc(Box<Expr>, Vec<(Op, Expr)>),
-    Unary(Op, Box<Expr>),
+    BinOpExpr(Box<Expr>, Vec<(BinOp, Expr)>),
+    Unary(MonOp, Box<Expr>),
     TypeSize(DType),
     Cast(DType, Box<Expr>),
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),
-    Assign(Box<Expr>, Op, Box<Expr>),
+    Assign(Box<Expr>, BinOp, Box<Expr>),
     Seq(Vec<Expr>),
     InitList(Vec<Expr>),
     Indexed(Box<Expr>, Box<Expr>),
@@ -91,7 +91,7 @@ impl ASTNode for Expr {
                             ASTNode::parse(arg)
                         ));
                     }
-                    Assoc(acc, args)
+                    BinOpExpr(acc, args)
                 };
 
             conditional_expr
@@ -117,33 +117,34 @@ impl ASTNode for Expr {
     }
 
     fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
+        use Expr::*;
         use StackInst::*;
+
         match self {
-            Self::ConstW(v) => stream.push(PushW(*v)),
-            Self::Var(v) => ctxt.push_var(v, stream),
-            Self::Unary(_op, _e) => todo!(),
-            Self::TypeSize(ty) => stream.push(PushW(ty.size())),
-            Self::Assoc(head, args) => {
+            ConstW(v) => stream.push(PushW(*v)),
+            Var(v) => ctxt.push_var(v, stream),
+            Unary(_op, _e) => todo!(),
+            TypeSize(ty) => stream.push(PushW(ty.size())),
+            BinOpExpr(head, args) => {
                 head.compile(ctxt, stream);
 
                 for (op, arg) in args {
                     let op = match op {
-                        Op::Add => Add,
-                        Op::Sub => Sub,
-                        Op::Mul => Mul,
-                        Op::Div => Div,
-
-                        _ => unreachable!(),
+                        BinOp::Add => Add,
+                        BinOp::Sub => Sub,
+                        BinOp::Mul => Mul,
+                        BinOp::Div => Div,
+                        _ => todo!(),
                     };
 
                     arg.compile(ctxt, stream);
                     stream.push(op);
                 }
             }
-            Self::FnCall(func, args) => {
+            FnCall(func, args) => {
                 ctxt.call_fn(func, args, stream);
             }
-            Self::Seq(seqs) => {
+            Seq(seqs) => {
                 let mut seqs = seqs.iter();
                 seqs.next().unwrap().compile(ctxt, stream);
 
@@ -163,17 +164,17 @@ impl Expr {
         use Expr::*;
         match self {
             ConstW(v) => Some(*v as u64),
-            Assoc(expr, items) => {
+            BinOpExpr(expr, items) => {
                 let mut e_val = expr.const_arithmetic_expr()?;
                 for (op, e) in items {
                     let operand = e.const_arithmetic_expr()?;
+                    use BinOp::*;
                     e_val = match op {
-                        Op::Add => e_val + operand,
-                        Op::Sub => e_val - operand,
-                        Op::Mul => e_val * operand,
-                        Op::Div => e_val / operand,
-
-                        _ => unreachable!(),
+                        Add => e_val + operand,
+                        Sub => e_val - operand,
+                        Mul => e_val * operand,
+                        Div => e_val / operand,
+                        _ => todo!(),
                     };
                 }
 
@@ -181,9 +182,10 @@ impl Expr {
             }
             Unary(op, expr) => {
                 let e_val = expr.const_arithmetic_expr()?;
+                use MonOp::*;
                 match op {
-                    Op::Not => Some(!e_val),
-                    _ => unreachable!(),
+                    LogicalNot => Some(!e_val),
+                    _ => todo!(),
                 }
             }
             TypeSize(dtype) => Some(dtype.size() as u64),

@@ -1,26 +1,61 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub enum Op {
+pub enum BinOp {
     Add,
     Sub,
     Mul,
     Div,
-    Not,
+    Mod,
+    LShift,
+    RShift,
+    Eq,
+    Neq,
+    And,
+    Or,
+    Xor,
+    LogicalAnd,
+    LogicalOr,
 }
 
-impl ASTNode for Op {
+impl ASTNode for BinOp {
     fn parse(pair: Pair<Rule>) -> Self {
-        use Op::*;
+        use BinOp::*;
         match pair.as_str() {
             "+" => Add,
             "-" => Sub,
             "*" => Mul,
             "/" => Div,
-
-            "!" => Not,
-
             s => unimplemented!("Unknown op `{}`", s),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum MonOp {
+    LogicalNot,
+    Inc,
+    Dec,
+    SizeOf,
+    Deref,
+    Negate,
+    BinaryNot,
+    AddrOf,
+}
+
+impl ASTNode for MonOp {
+    fn parse(pair: Pair<Rule>) -> Self {
+        use MonOp::*;
+        match pair.as_str() {
+            "!" => LogicalNot,
+            "++" => Inc,
+            "--" => Dec,
+            "sizeof" => SizeOf,
+            "*" => Deref,
+            "-" => Negate,
+            "~" => BinaryNot,
+            "&" => AddrOf,
+            _ => unreachable!(),
         }
     }
 }

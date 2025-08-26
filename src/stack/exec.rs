@@ -40,7 +40,6 @@ impl StackMachine {
                 }
                 PrintI32 => {
                     println!("{}", self.stack.pop().unwrap());
-                    println!("Stack: {:?}", self.stack);
                 }
 
                 StackAlloc => {
@@ -83,17 +82,15 @@ impl StackMachine {
                         .get_mut(addr as usize)
                         .expect("Global address does not exist.") = word;
                 }
-                LocalRead => {
-                    let addr = self.stack.pop().expect("Local read on empty stack");
-                    let addr = self.stack.len() - 1 - addr as usize;
+                LocalRead(addr) => {
+                    let addr = self.stack.len() - 1 - addr;
                     let value = *self.stack.get(addr).expect("Address does not exist");
 
                     self.stack.push(value);
                 }
-                LocalStore => {
-                    let addr = self.stack.pop().expect("Local store on empty stack");
+                LocalStore(addr) => {
                     let word = self.stack.pop().expect("Local store on empty stack");
-                    let addr = self.stack.len() - 1 - addr as usize;
+                    let addr = self.stack.len() - addr;
 
                     *self.stack.get_mut(addr).expect("Address does not exist") = word;
                 }

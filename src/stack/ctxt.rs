@@ -52,21 +52,15 @@ impl CompileContext {
         let ret_label = self.label();
 
         use StackInst::*;
-
         // Push stack pointer & return address
-        stream.extend(&[
-            Debug(self.label() as _),
-            PushW(ret_label),
-            PushW(self.local_offset as Word),
-            LocalRead,
-        ]);
+        stream.extend(&[PushW(ret_label), LocalRead(self.local_offset)]);
 
         for arg in args {
             arg.compile(self, stream);
         }
 
         v.compile(self, stream);
-        stream.extend(&[Goto, Label(ret_label), Debug(self.label() as _)]);
+        stream.extend(&[Goto, Label(ret_label)]);
     }
 
     pub fn push_addr(&self, v: &Ident, stream: &mut StackProgram) {
@@ -93,7 +87,7 @@ impl CompileContext {
         }
 
         if let Some(&addr) = self.locals.get(v) {
-            stream.extend(&[PushW(addr), LocalRead]);
+            stream.extend(&[LocalRead(addr as _)]);
             return;
         }
 
@@ -104,7 +98,7 @@ impl CompileContext {
         use StackInst::*;
 
         if let Some(&addr) = self.locals.get(v) {
-            stream.extend(&[PushW(addr), LocalStore]);
+            stream.extend(&[LocalStore(addr as _)]);
             return;
         }
 
