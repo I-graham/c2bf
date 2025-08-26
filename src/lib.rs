@@ -21,13 +21,14 @@ pub fn exec_file(filename: &str) {
     let parsed = Base::parse(pair);
 
     let mut ctxt = CompileContext::default();
-    let mut code = vec![];
 
-    parsed.compile(&mut ctxt, &mut code);
+    parsed.compile(&mut ctxt);
 
-    dbg!(&code);
+    let CompileContext { stream, .. } = ctxt;
+
+    dbg!(&stream);
 
     println!("\nExecution:\n");
 
-    exec_stack_program(&code);
+    exec_stack_program(&stream);
 }

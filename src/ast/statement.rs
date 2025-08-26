@@ -84,7 +84,7 @@ impl ASTNode for Stmt {
         }
     }
 
-    fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, ctxt: &mut CompileContext) {
         use StackInst::*;
         use Stmt::*;
         match self {
@@ -97,37 +97,37 @@ impl ASTNode for Stmt {
                     let Some(def) = def else { continue };
                     let Some(v) = decl.get_name() else { continue };
 
-                    def.compile(ctxt, stream);
-                    ctxt.store(&v, stream);
+                    def.compile(ctxt);
+                    ctxt.store(&v);
                 }
             }
             ExprStmt(expr) => {
-                expr.compile(ctxt, stream);
-                stream.push(DiscardW);
+                expr.compile(ctxt);
+                ctxt.emit(DiscardW);
             }
             SeqStmt(stmts) => {
                 for stmt in stmts {
-                    stmt.compile(ctxt, stream);
+                    stmt.compile(ctxt);
                 }
             }
 
             Print(expr) => {
-                expr.compile(ctxt, stream);
-                stream.push(PrintI32);
+                expr.compile(ctxt);
+                ctxt.emit(PrintI32);
             }
 
             Return(e) => {
                 if let Some(expr) = e {
-                    expr.compile(ctxt, stream);
-                    stream.extend(&[
-                        CopyDown(ctxt.local_offset),
+                    expr.compile(ctxt);
+                    ctxt.emit_stream(&[
+                        Move(ctxt.local_offset),
                         PushW(ctxt.local_offset as Word),
                         StackDealloc,
                         SwapW,
                         Goto,
                     ]);
                 } else {
-                    stream.extend(&[PushW(ctxt.local_offset as Word), StackDealloc, Goto]);
+                    ctxt.emit_stream(&[PushW(ctxt.local_offset as Word), StackDealloc, Goto]);
                 }
             }
             _ => todo!(),

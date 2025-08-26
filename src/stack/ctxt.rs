@@ -8,6 +8,8 @@ pub type Label = Word;
 pub struct CompileContext {
     pub global_offset: usize,
     pub local_offset: usize,
+    pub stack_height: Option<usize>,
+    pub stream: Vec<StackInst>,
     label_count: Label,
     globals: HashMap<Ident, Word>,
     locals: HashMap<Ident, Word>,
@@ -48,75 +50,74 @@ impl CompileContext {
         self.funcs[v]
     }
 
-    pub fn call_fn(&mut self, v: &Expr, args: &Vec<Expr>, stream: &mut StackProgram) {
+    pub fn call_fn(&mut self, v: &Expr, args: &Vec<Expr>) {
         let ret_label = self.label();
 
         use StackInst::*;
         // Push stack pointer & return address
-        stream.extend(&[PushW(ret_label), LocalRead(self.local_offset)]);
+        self.stream
+            .extend(&[PushW(ret_label), LocalRead(self.local_offset)]);
 
         for arg in args {
-            arg.compile(self, stream);
+            arg.compile(self);
         }
 
-        v.compile(self, stream);
-        stream.extend(&[Goto, Label(ret_label)]);
+        v.compile(self);
+        self.stream.extend(&[Goto, Label(ret_label)]);
     }
 
-    pub fn push_addr(&self, v: &Ident, stream: &mut StackProgram) {
+    pub fn push_addr(&mut self, v: &Ident) {
         use StackInst::*;
         if let Some(&addr) = self.globals.get(v) {
-            stream.push(PushW(addr));
+            self.stream.push(PushW(addr));
             return;
         }
 
         unreachable!();
     }
 
-    pub fn push_var(&self, v: &Ident, stream: &mut StackProgram) {
+    pub fn push_var(&mut self, v: &Ident) {
         use StackInst::*;
 
         if let Some(&addr) = self.globals.get(v) {
-            stream.extend(&[PushW(addr), GlobalRead]);
+            self.stream.extend(&[PushW(addr), GlobalRead]);
             return;
         }
 
         if let Some(&addr) = self.funcs.get(v) {
-            stream.push(PushW(addr));
+            self.stream.push(PushW(addr));
             return;
         }
 
         if let Some(&addr) = self.locals.get(v) {
-            stream.extend(&[LocalRead(addr as _)]);
+            self.stream.extend(&[LocalRead(addr as _)]);
             return;
         }
 
         unreachable!();
     }
 
-    pub fn store(&self, v: &Ident, stream: &mut StackProgram) {
+    pub fn store(&mut self, v: &Ident) {
         use StackInst::*;
 
         if let Some(&addr) = self.locals.get(v) {
-            stream.extend(&[LocalStore(addr as _)]);
+            let Some(height) = self.stack_height else {
+                unreachable!()
+            };
+            let offset = height - addr as usize;
+            self.stream.extend(&[LocalStore(offset)]);
             return;
         }
 
         if let Some(&addr) = self.globals.get(v) {
-            stream.extend(&[PushW(addr), GlobalStore]);
+            self.stream.extend(&[PushW(addr), GlobalStore]);
             return;
         }
 
         unreachable!();
     }
 
-    pub fn fdef(
-        &mut self,
-        f: &Ident,
-        params: &Vec<ParamDecl>,
-        body: &Stmt,
-        stream: &mut StackProgram,
-    ) {
+    pub fn fdef(&mut self, f: &Ident, params: &Vec<ParamDecl>, body: &Stmt) {
         // New Stack Frame
         self.locals.clear();
         self.local_offset = 1; // Include stack pointer in stack frame
@@ -139,16 +140,30 @@ impl CompileContext {
         let label = self.fn_label(f);
         let frame_size = self.local_offset as Word;
 
-        stream.extend(&[
+        self.stream.extend(&[
             Comment(f.clone().leak()),
             Label(label),
             PushW(frame_size - 1), // Stack pointer is already allocated
             StackAlloc,
         ]);
 
-        body.compile(self, stream);
+        self.stack_height = Some(self.local_offset);
+        body.compile(self);
 
         // Return to caller, which should have pushed a return label
-        stream.extend(&[PushW(frame_size), StackDealloc, Goto]);
+        self.stream.extend(&[PushW(frame_size), StackDealloc, Goto]);
+    }
+
+    pub fn emit(&mut self, inst: StackInst) {
+        if let (Some(height), (args, Some(output))) = (self.stack_height, inst.signature()) {
+            self.stack_height = Some(height - args + output);
+        }
+        self.stream.push(inst);
+    }
+
+    pub fn emit_stream(&mut self, code: &[StackInst]) {
+        for &inst in code {
+            self.emit(inst);
+        }
     }
 }

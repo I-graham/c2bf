@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::*;
 
-pub fn exec_stack_program(code: &StackProgram) {
+pub fn exec_stack_program(code: &Vec<StackInst>) {
     let mut stack_machine = StackMachine::default();
 
     stack_machine.exec(code);
@@ -15,7 +15,7 @@ pub struct StackMachine {
 }
 
 impl StackMachine {
-    pub fn exec(&mut self, code: &StackProgram) {
+    pub fn exec(&mut self, code: &Vec<StackInst>) {
         use StackInst::*;
         let labels: HashMap<Word, usize> = code
             .iter()
@@ -29,6 +29,12 @@ impl StackMachine {
         let mut ip = 0;
         loop {
             let inst = code[ip];
+
+            let (args, _) = inst.signature();
+            if self.stack.len() < args {
+                panic!("#{}: {:?} got insufficient args.", ip, inst);
+            }
+
             match inst {
                 Debug(l) => {
                     println!("Stack @ {}: {:?}", l, self.stack);
@@ -52,7 +58,7 @@ impl StackMachine {
                     let len = self.stack.len();
                     self.stack.resize(len - size, 0);
                 }
-                CopyDown(d) => {
+                Move(d) => {
                     let n = self.stack.len() - 1;
                     let word = *self.stack.last().unwrap();
                     self.stack[n - d] = word;
@@ -66,7 +72,7 @@ impl StackMachine {
                 }
 
                 GlobalRead => {
-                    let addr = self.stack.pop().expect("Global read on empty stack");
+                    let addr = self.stack.pop().unwrap();
                     let value = self
                         .stack
                         .get(addr as usize)
@@ -74,8 +80,8 @@ impl StackMachine {
                     self.stack.push(*value)
                 }
                 GlobalStore => {
-                    let addr = self.stack.pop().expect("Global store on empty stack");
-                    let word = self.stack.pop().expect("Global store on empty stack");
+                    let addr = self.stack.pop().unwrap();
+                    let word = self.stack.pop().unwrap();
 
                     *self
                         .stack
@@ -89,14 +95,14 @@ impl StackMachine {
                     self.stack.push(value);
                 }
                 LocalStore(addr) => {
-                    let word = self.stack.pop().expect("Local store on empty stack");
+                    let word = self.stack.pop().unwrap();
                     let addr = self.stack.len() - addr;
 
                     *self.stack.get_mut(addr).expect("Address does not exist") = word;
                 }
 
                 Goto => {
-                    let addr = self.stack.pop().expect("Goto nil");
+                    let addr = self.stack.pop().unwrap();
                     ip = labels[&addr];
                     continue;
                 }

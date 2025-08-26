@@ -11,7 +11,7 @@ pub enum StackInst {
     // Preparation
     PushW(Word),
     DiscardW,
-    CopyDown(usize), // Copy word into stack
+    Move(usize), // Copy word into stack
     SwapW,
 
     // ALU
@@ -37,6 +37,30 @@ pub enum StackInst {
     PrintI32,
 }
 
+impl StackInst {
+    // # of words of input + # of words of output (if constant)
+    pub fn signature(self) -> (usize, Option<usize>) {
+        use StackInst::*;
+        match self {
+            Comment(_) | Debug(_) | Nop => (0, Some(0)),
+            PushW(_) => (0, Some(1)),
+            DiscardW => (1, Some(0)),
+            Move(_) => (1, Some(0)),
+            SwapW => (2, Some(2)),
+            Add | Sub | Mul | Div => (2, Some(1)),
+            StackAlloc | StackDealloc => (1, None),
+            GlobalStore => (2, Some(0)),
+            GlobalRead => (1, Some(1)),
+            LocalStore(_) => (1, Some(0)),
+            LocalRead(_) => (0, Some(1)),
+            Label(_) => (0, None),
+            Goto => (1, Some(0)),
+            Exit => (0, None),
+            PrintI32 => (1, Some(0)),
+        }
+    }
+}
+
 impl std::fmt::Debug for StackInst {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use StackInst::*;
@@ -46,7 +70,7 @@ impl std::fmt::Debug for StackInst {
             Comment(c) => write!(f, "/* {} */", c),
             PushW(c) => write!(f, "PushW({})", c),
             DiscardW => write!(f, "DiscardW"),
-            CopyDown(d) => write!(f, "CopyDown({})", d),
+            Move(d) => write!(f, "CopyDown({})", d),
             SwapW => write!(f, "SwapW"),
             Add => write!(f, "Add"),
             Sub => write!(f, "Sub"),

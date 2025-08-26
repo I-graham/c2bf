@@ -116,17 +116,17 @@ impl ASTNode for Expr {
         }
     }
 
-    fn compile(&self, ctxt: &mut CompileContext, stream: &mut Vec<StackInst>) {
+    fn compile(&self, ctxt: &mut CompileContext) {
         use Expr::*;
         use StackInst::*;
 
         match self {
-            ConstW(v) => stream.push(PushW(*v)),
-            Var(v) => ctxt.push_var(v, stream),
+            ConstW(v) => ctxt.emit(PushW(*v)),
+            Var(v) => ctxt.push_var(v),
             Unary(_op, _e) => todo!(),
-            TypeSize(ty) => stream.push(PushW(ty.size())),
+            TypeSize(ty) => ctxt.emit(PushW(ty.size())),
             BinOpExpr(head, args) => {
-                head.compile(ctxt, stream);
+                head.compile(ctxt);
 
                 for (op, arg) in args {
                     let op = match op {
@@ -137,20 +137,20 @@ impl ASTNode for Expr {
                         _ => todo!(),
                     };
 
-                    arg.compile(ctxt, stream);
-                    stream.push(op);
+                    arg.compile(ctxt);
+                    ctxt.emit(op);
                 }
             }
             FnCall(func, args) => {
-                ctxt.call_fn(func, args, stream);
+                ctxt.call_fn(func, args);
             }
             Seq(seqs) => {
                 let mut seqs = seqs.iter();
-                seqs.next().unwrap().compile(ctxt, stream);
+                seqs.next().unwrap().compile(ctxt);
 
                 for seq in seqs {
-                    stream.push(DiscardW);
-                    seq.compile(ctxt, stream);
+                    ctxt.emit(DiscardW);
+                    seq.compile(ctxt);
                 }
             }
 
