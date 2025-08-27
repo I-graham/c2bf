@@ -7,6 +7,6 @@ int f(int x, int y) {
 }
 
 int main() {
-  int d = f(b, c);
+  int d = f(b, c) + 6;
   print(d);
 }
