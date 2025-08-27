@@ -57,7 +57,9 @@ impl CompileContext {
         use StackInst::*;
         // Push stack pointer & return address
         self.emit_stream(&[PushW(ret_label), LocalRead(self.local_offset)]);
-        self.emit(Debug);
+
+        let Expr::Var(v) = v else { unreachable!() };
+        self.emit(Debug(v.clone().leak()));
 
         for arg in args {
             arg.compile(self);

@@ -6,7 +6,7 @@ pub enum StackInst {
     #[default]
     Nop,
     Comment(&'static str),
-    Debug(usize),
+    Debug(&'static str),
 
     // Preparation
     PushW(Word),
