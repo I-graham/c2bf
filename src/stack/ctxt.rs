@@ -58,8 +58,8 @@ impl CompileContext {
         // Push stack pointer & return address
         self.emit_stream(&[PushW(ret_label), LocalRead(self.local_offset)]);
 
-        let Expr::Var(v) = v else { unreachable!() };
-        self.emit(Debug(v.clone().leak()));
+        let Expr::Var(n) = v else { unreachable!() };
+        self.emit(Debug(n.clone().leak()));
 
         for arg in args {
             arg.compile(self);
@@ -94,6 +94,7 @@ impl CompileContext {
         }
 
         if let Some(&addr) = self.locals.get(v) {
+            self.emit(Debug(format!("{} @ {}", v, addr).leak()));
             self.emit(LocalRead(addr as _));
             return;
         }
