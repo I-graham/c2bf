@@ -119,7 +119,6 @@ impl ASTNode for Expr {
     fn compile(&self, ctxt: &mut CompileContext) {
         use Expr::*;
         use StackInst::*;
-
         match self {
             ConstW(v) => ctxt.emit(PushW(*v)),
             Var(v) => ctxt.push_var(v),

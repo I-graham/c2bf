@@ -78,6 +78,7 @@ impl ASTNode for Program {
         }
 
         // Call main()
+        ctxt.stack_height = Some(0);
         ctxt.call_fn(&Expr::Var("main".into()), &vec![]);
         ctxt.emit(Exit);
 

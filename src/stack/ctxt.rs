@@ -51,19 +51,20 @@ impl CompileContext {
     }
 
     pub fn call_fn(&mut self, v: &Expr, args: &Vec<Expr>) {
+        let height = self.stack_height.expect("Height should be known.");
         let ret_label = self.label();
 
         use StackInst::*;
         // Push stack pointer & return address
-        self.stream
-            .extend(&[PushW(ret_label), LocalRead(self.local_offset)]);
+        self.emit_stream(&[PushW(ret_label), LocalRead(self.local_offset)]);
 
         for arg in args {
             arg.compile(self);
         }
 
         v.compile(self);
-        self.stream.extend(&[Goto, Label(ret_label)]);
+        self.emit_stream(&[Goto, Label(ret_label)]);
+        self.stack_height = Some(height + 1);
     }
 
     pub fn push_addr(&mut self, v: &Ident) {
@@ -80,17 +81,17 @@ impl CompileContext {
         use StackInst::*;
 
         if let Some(&addr) = self.globals.get(v) {
-            self.stream.extend(&[PushW(addr), GlobalRead]);
+            self.emit_stream(&[PushW(addr), GlobalRead]);
             return;
         }
 
         if let Some(&addr) = self.funcs.get(v) {
-            self.stream.push(PushW(addr));
+            self.emit(PushW(addr));
             return;
         }
 
         if let Some(&addr) = self.locals.get(v) {
-            self.stream.extend(&[LocalRead(addr as _)]);
+            self.emit(LocalRead(addr as _));
             return;
         }
 
@@ -105,12 +106,12 @@ impl CompileContext {
                 unreachable!()
             };
             let offset = height - addr as usize;
-            self.stream.extend(&[LocalStore(offset)]);
+            self.emit(LocalStore(offset));
             return;
         }
 
         if let Some(&addr) = self.globals.get(v) {
-            self.stream.extend(&[PushW(addr), GlobalStore]);
+            self.emit_stream(&[PushW(addr), GlobalStore]);
             return;
         }
 
@@ -140,7 +141,7 @@ impl CompileContext {
         let label = self.fn_label(f);
         let frame_size = self.local_offset as Word;
 
-        self.stream.extend(&[
+        self.emit_stream(&[
             Comment(f.clone().leak()),
             Label(label),
             PushW(frame_size - 1), // Stack pointer is already allocated
@@ -148,10 +149,11 @@ impl CompileContext {
         ]);
 
         self.stack_height = Some(self.local_offset);
+
         body.compile(self);
 
         // Return to caller, which should have pushed a return label
-        self.stream.extend(&[PushW(frame_size), StackDealloc, Goto]);
+        self.emit_stream(&[PushW(frame_size), StackDealloc, Goto]);
     }
 
     pub fn emit(&mut self, inst: StackInst) {
