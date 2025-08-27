@@ -2,11 +2,11 @@ int a = 1;
 int b = 2;
 int c = a + b;
 
-int add() {
-  return 50;
+int f(int x, int y) {
+  return x + y + 10;
 }
 
 int main() {
-  int d = add();
+  int d = f(b, c);
   print(d);
 }

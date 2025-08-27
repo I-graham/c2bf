@@ -57,6 +57,7 @@ impl CompileContext {
         use StackInst::*;
         // Push stack pointer & return address
         self.emit_stream(&[PushW(ret_label), LocalRead(self.local_offset)]);
+        self.emit(Debug);
 
         for arg in args {
             arg.compile(self);

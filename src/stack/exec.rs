@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::*;
 
-pub fn exec_stack_program(code: &Vec<StackInst>) {
+pub fn exec_stack_program(code: &[StackInst]) {
     let mut stack_machine = StackMachine::default();
 
     stack_machine.exec(code);
@@ -15,7 +15,7 @@ pub struct StackMachine {
 }
 
 impl StackMachine {
-    pub fn exec(&mut self, code: &Vec<StackInst>) {
+    pub fn exec(&mut self, code: &[StackInst]) {
         use StackInst::*;
         let labels: HashMap<Word, usize> = code
             .iter()
