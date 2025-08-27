@@ -58,9 +58,6 @@ impl CompileContext {
         // Push stack pointer & return address
         self.emit_stream(&[PushW(ret_label), LocalRead(self.local_offset)]);
 
-        let Expr::Var(n) = v else { unreachable!() };
-        self.emit(Debug(n.clone().leak()));
-
         for arg in args {
             arg.compile(self);
         }
@@ -94,7 +91,6 @@ impl CompileContext {
         }
 
         if let Some(&addr) = self.locals.get(v) {
-            self.emit(Debug(format!("{} @ {}", v, addr).leak()));
             self.emit(LocalRead(addr as _));
             return;
         }
@@ -148,7 +144,7 @@ impl CompileContext {
         self.emit_stream(&[
             Comment(f.clone().leak()),
             Label(label),
-            PushW(frame_size - 1), // Stack pointer is already allocated
+            PushW(frame_size - params.len() as Word - 1), // Stack pointer is already allocated
             StackAlloc,
         ]);
 
