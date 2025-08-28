@@ -101,6 +101,11 @@ impl StackMachine {
                     *self.stack.get_mut(addr).expect("Address does not exist") = word;
                 }
 
+                Branch(t, f) => {
+                    let word = self.stack.pop().unwrap();
+                    let lbl = if word != 0 { t } else { f };
+                    ip = labels[&lbl];
+                }
                 Goto => {
                     let addr = self.stack.pop().unwrap();
                     ip = labels[&addr];
@@ -121,6 +126,30 @@ impl StackMachine {
                         _ => unreachable!(),
                     };
                     self.stack.push(out)
+                }
+
+                LNot => {
+                    let word = self.stack.pop().unwrap();
+                    let not = if word == 0 { 1 } else { 0 };
+                    self.stack.push(not);
+                }
+
+                o @ (Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr) => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    let cmp = match o {
+                        Eq => a == b,
+                        Neq => a != b,
+                        Lt => a < b,
+                        LtEq => a <= b,
+                        Gr => a > b,
+                        GrEq => a >= b,
+                        LAnd => a != 0 && b != 0,
+                        LOr => a != 0 || b != 0,
+                        _ => unreachable!(),
+                    };
+                    let word = if cmp { 1 } else { 0 };
+                    self.stack.push(word);
                 }
             }
 

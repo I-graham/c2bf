@@ -8,5 +8,14 @@ int f(int x, int y) {
 
 int main() {
   int d = f(b, c) + 6;
+  if (d <= 20) {
+    print(0);
+  }
+
+  if (d >= 20) {
+    print(1);
+  } else {
+    print(2);
+  }
   print(d);
 }

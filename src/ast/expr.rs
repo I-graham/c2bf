@@ -125,7 +125,7 @@ impl ASTNode for Expr {
             Unary(_op, _e) => todo!(),
             TypeSize(ty) => ctxt.emit(PushW(ty.size())),
             BinOpExpr(head, args) => {
-                head.compile(ctxt);
+                ctxt.compile(head);
 
                 for (op, arg) in args {
                     let op = match op {
@@ -133,10 +133,18 @@ impl ASTNode for Expr {
                         BinOp::Sub => Sub,
                         BinOp::Mul => Mul,
                         BinOp::Div => Div,
+                        BinOp::Eq => Eq,
+                        BinOp::Neq => Neq,
+                        BinOp::Lt => Lt,
+                        BinOp::LtEq => LtEq,
+                        BinOp::Gr => Gr,
+                        BinOp::GrEq => GrEq,
+                        BinOp::LAnd => LAnd,
+                        BinOp::LOr => LOr,
                         _ => todo!(),
                     };
 
-                    arg.compile(ctxt);
+                    ctxt.compile(arg);
                     ctxt.emit(op);
                 }
             }
@@ -145,11 +153,11 @@ impl ASTNode for Expr {
             }
             Seq(seqs) => {
                 let mut seqs = seqs.iter();
-                seqs.next().unwrap().compile(ctxt);
+                ctxt.compile(seqs.next().unwrap());
 
                 for seq in seqs {
                     ctxt.emit(DiscardW);
-                    seq.compile(ctxt);
+                    ctxt.compile(seq);
                 }
             }
 

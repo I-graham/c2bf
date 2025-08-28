@@ -11,11 +11,15 @@ pub enum BinOp {
     RShift,
     Eq,
     Neq,
+    Lt,
+    LtEq,
+    Gr,
+    GrEq,
+    LAnd,
+    LOr,
     And,
     Or,
     Xor,
-    LogicalAnd,
-    LogicalOr,
 }
 
 impl ASTNode for BinOp {
@@ -26,6 +30,14 @@ impl ASTNode for BinOp {
             "-" => Sub,
             "*" => Mul,
             "/" => Div,
+            "==" => Eq,
+            "!=" => Neq,
+            "<" => Lt,
+            "<=" => LtEq,
+            ">" => Gr,
+            ">=" => GrEq,
+            "&&" => LAnd,
+            "||" => LOr,
             s => unimplemented!("Unknown op `{}`", s),
         }
     }

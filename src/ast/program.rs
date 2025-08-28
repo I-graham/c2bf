@@ -72,7 +72,7 @@ impl ASTNode for Program {
             let def = e.clone().unwrap();
 
             ctxt.emit(Comment(v.clone().leak()));
-            def.compile(ctxt);
+            ctxt.compile(&def);
             ctxt.push_addr(v);
             ctxt.emit(GlobalStore);
         }

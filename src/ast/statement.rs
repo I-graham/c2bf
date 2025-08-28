@@ -97,28 +97,28 @@ impl ASTNode for Stmt {
                     let Some(def) = def else { continue };
                     let Some(v) = decl.get_name() else { continue };
 
-                    def.compile(ctxt);
+                    ctxt.compile(def);
                     ctxt.store(&v);
                 }
             }
             ExprStmt(expr) => {
-                expr.compile(ctxt);
+                ctxt.compile(expr);
                 ctxt.emit(DiscardW);
             }
             SeqStmt(stmts) => {
                 for stmt in stmts {
-                    stmt.compile(ctxt);
+                    ctxt.compile(stmt);
                 }
             }
 
             Print(expr) => {
-                expr.compile(ctxt);
+                ctxt.compile(expr);
                 ctxt.emit(PrintI32);
             }
 
             Return(e) => {
                 if let Some(expr) = e {
-                    expr.compile(ctxt);
+                    ctxt.compile(expr);
                     ctxt.emit_stream(&[
                         Move(ctxt.local_offset),
                         PushW(ctxt.local_offset as Word),
@@ -129,6 +129,27 @@ impl ASTNode for Stmt {
                 } else {
                     ctxt.emit_stream(&[PushW(ctxt.local_offset as Word), StackDealloc, Goto]);
                 }
+            }
+            IfStmt(cond, body) => {
+                let t_lbl = ctxt.label();
+                let e_lbl = ctxt.label();
+
+                ctxt.compile(cond);
+                ctxt.emit_stream(&[Branch(t_lbl, e_lbl), Label(t_lbl)]);
+                ctxt.compile(body);
+                ctxt.emit_stream(&[PushW(e_lbl), Goto, Label(e_lbl)]);
+            }
+            IfElseStmt(cond, t_body, f_body) => {
+                let t_lbl = ctxt.label();
+                let f_lbl = ctxt.label();
+                let e_lbl = ctxt.label();
+
+                ctxt.compile(cond);
+                ctxt.emit_stream(&[Branch(t_lbl, f_lbl), Label(t_lbl)]);
+                ctxt.compile(t_body);
+                ctxt.emit_stream(&[PushW(e_lbl), Goto, Label(f_lbl)]);
+                ctxt.compile(f_body);
+                ctxt.emit_stream(&[PushW(e_lbl), Goto, Label(e_lbl)]);
             }
             _ => todo!(),
         }

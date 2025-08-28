@@ -59,7 +59,7 @@ shift_expr = { add_expr ~ (shift_op ~ add_expr)* }
 	shift_op = { "<<" | ">>" }
 
 rel_expr = { shift_expr ~ (rel_op ~ shift_expr)* }
-	rel_op = { "<" | ">" | "<=" | ">=" }
+	rel_op = { "<=" | ">=" | "<" | ">" }
 
 eq_expr = {rel_expr ~ (eq_op ~ rel_expr)* }
 	eq_op = { "==" | "!=" }
@@ -273,7 +273,7 @@ expr_stmt = { expr? ~ ";" }
 
 selection_stmt = { if_stmt | switch_stmt }
 
-if_stmt     = { "if" ~ "(" ~ expr ~ ")" ~ ("expr" ~ stmt)? }
+if_stmt     = { "if" ~ "(" ~ expr ~ ")" ~ stmt ~ ("else" ~ stmt)? }
 switch_stmt = { "switch" ~ "(" ~ expr ~ ")" ~ stmt }
 
 iteration_stmt = { while_loop | do_loop | for_loop }

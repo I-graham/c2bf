@@ -17,6 +17,10 @@ pub struct CompileContext {
 }
 
 impl CompileContext {
+    pub fn compile<T: ASTNode>(&mut self, n: &T) {
+        n.compile(self);
+    }
+
     pub fn label(&mut self) -> Label {
         self.label_count += 1;
         self.label_count
@@ -59,10 +63,10 @@ impl CompileContext {
         self.emit_stream(&[PushW(ret_label), LocalRead(self.local_offset)]);
 
         for arg in args {
-            arg.compile(self);
+            self.compile(arg);
         }
 
-        v.compile(self);
+        self.compile(v);
         self.emit_stream(&[Goto, Label(ret_label)]);
         self.stack_height = Some(height + 1);
     }
@@ -150,7 +154,7 @@ impl CompileContext {
 
         self.stack_height = Some(self.local_offset);
 
-        body.compile(self);
+        self.compile(body);
 
         // Return to caller, which should have pushed a return label
         self.emit_stream(&[PushW(frame_size), StackDealloc, Goto]);
