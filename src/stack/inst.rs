@@ -8,11 +8,12 @@ pub enum StackInst {
     Comment(&'static str),
     Debug(&'static str),
 
-    // Preparation
+    // Stack Manipulation
     PushW(Word),
     DiscardW,
     Move(usize), // Copy word into stack
     SwapW,
+    CopyW,
 
     // Arithmetic
     Add,
@@ -60,6 +61,7 @@ impl StackInst {
             PushW(_) => (0, Some(1)),
             DiscardW => (1, Some(0)),
             Move(_) => (1, Some(0)),
+            CopyW => (1, Some(2)),
 
             SwapW => (2, Some(2)),
             LNot => (1, Some(1)),
@@ -89,6 +91,7 @@ impl std::fmt::Debug for StackInst {
             DiscardW => write!(f, "DiscardW"),
             Move(d) => write!(f, "CopyDown({})", d),
             SwapW => write!(f, "SwapW"),
+            CopyW => write!(f, "CopyW"),
             Add => write!(f, "Add"),
             Sub => write!(f, "Sub"),
             Mul => write!(f, "Mul"),

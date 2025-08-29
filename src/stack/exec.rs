@@ -70,6 +70,10 @@ impl StackMachine {
                     self.stack.push(a);
                     self.stack.push(b);
                 }
+                CopyW => {
+                    let top = *self.stack.last().unwrap();
+                    self.stack.push(top);
+                }
 
                 GlobalRead => {
                     let addr = self.stack.pop().unwrap();
@@ -121,7 +125,7 @@ impl StackMachine {
                     let out = match o {
                         Add => a + b,
                         Sub => a - b,
-                        Mul => a + b,
+                        Mul => a * b,
                         Div => a / b,
                         _ => unreachable!(),
                     };

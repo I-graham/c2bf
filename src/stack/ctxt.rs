@@ -95,7 +95,11 @@ impl CompileContext {
         }
 
         if let Some(&addr) = self.locals.get(v) {
-            self.emit(LocalRead(addr as _));
+            let Some(height) = self.stack_height else {
+                unreachable!()
+            };
+            let offset = height - 1 - addr as usize;
+            self.emit_stream(&[LocalRead(offset)]);
             return;
         }
 
@@ -109,7 +113,7 @@ impl CompileContext {
             let Some(height) = self.stack_height else {
                 unreachable!()
             };
-            let offset = height - addr as usize;
+            let offset = height - 1 - addr as usize;
             self.emit(LocalStore(offset));
             return;
         }

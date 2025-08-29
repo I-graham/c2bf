@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub enum BinOp {
+    Set,
     Add,
     Sub,
     Mul,
@@ -26,6 +27,7 @@ impl ASTNode for BinOp {
     fn parse(pair: Pair<Rule>) -> Self {
         use BinOp::*;
         match pair.as_str() {
+            "=" => Set,
             "+" => Add,
             "-" => Sub,
             "*" => Mul,

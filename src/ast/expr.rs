@@ -107,7 +107,6 @@ impl ASTNode for Expr {
                     Seq(es.map(Self::parse).collect())
                 };
 
-
             initializer
                 [e] -> e;
 
@@ -159,6 +158,13 @@ impl ASTNode for Expr {
                     ctxt.emit(DiscardW);
                     ctxt.compile(seq);
                 }
+            }
+
+            Assign(var, BinOp::Set, val) => {
+                let Expr::Var(v) = &**var else { todo!() };
+                ctxt.compile(val);
+                ctxt.emit(CopyW);
+                ctxt.store(v);
             }
 
             e => todo!("Unsupported expr {:?}", e),

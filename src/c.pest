@@ -67,7 +67,7 @@ eq_expr = {rel_expr ~ (eq_op ~ rel_expr)* }
 and_expr = {eq_expr ~ (and_op ~ eq_expr)* }
 	and_op = {"&"}
 
-xor_expr = {and_expr | (xor_op ~ and_expr)* }
+xor_expr = {and_expr ~ (xor_op ~ and_expr)* }
 	xor_op = {"^"}
 
 ior_expr = {xor_expr ~ (ior_op ~ xor_expr)* }
@@ -267,7 +267,7 @@ labeled_stmt =
 case_stmt    = { "case" ~ ":" ~ const_expr ~ ":" ~ stmt }
 default_stmt = { "default" ~ ":" ~ stmt }
 
-compound_stmt = { "{" ~ (declaration | stmt)* ~ "}" }
+compound_stmt = { "{" ~ (stmt | declaration)* ~ "}" }
 
 expr_stmt = { expr? ~ ";" }
 
@@ -280,7 +280,7 @@ iteration_stmt = { while_loop | do_loop | for_loop }
 
 while_loop = { "while" ~ "(" ~ expr ~ ")" ~ stmt }
 do_loop    = {"do" ~ stmt ~ "while" ~ "(" ~ expr ~ ")" ~ ";" }
-for_loop   = { "for" ~ "(" ~ (expr_stmt | declaration) ~ expr? ~ ";" ~ expr? ~ ")" ~ stmt }
+for_loop   = { "for" ~ "(" ~ (expr_stmt | declaration) ~ expr_stmt ~ expr? ~ ")" ~ stmt }
 
 jump_stmt     = { goto_stmt | continue_stmt | break_stmt | return_stmt }
 

@@ -3,7 +3,8 @@ int b = 2;
 int c = a + b;
 
 int f(int x, int y) {
-  return x + y + 10;
+  int z = x + y + 10;
+  return z;
 }
 
 int main() {
