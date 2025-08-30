@@ -4,6 +4,7 @@ use super::*;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum BFInst {
+    Dbg(&'static str),
     Left,  // `<`
     Right, // `>`
     Inc,   // `+`
@@ -39,20 +40,27 @@ impl BFInst {
         use BFInst::*;
         match self {
             Left => '<',
-            Right => '<',
+            Right => '>',
             Inc => '+',
             Dec => '-',
             In => ',',
             Out => '.',
             LBrac => '[',
             RBrac => ']',
+            _ => unimplemented!(),
         }
     }
 
-    pub fn show_code(code: &[BFInst]) -> String {
+    pub fn show_code(code: &[BFInst], dbg_info: bool) -> String {
         let mut s = String::new();
 
         for i in code {
+            if let BFInst::Dbg(c) = i {
+                if dbg_info {
+                    s += &format!("\n`{}`: ", c);
+                }
+                continue;
+            }
             s.push(i.show());
         }
 
@@ -66,9 +74,15 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
 
     let mut bf = vec![];
 
+    // Allocate extra cell (in case stack is empty), then goto 1
+    bf.extend(BFInst::parse(">+[>"));
+
     for inst in stack {
         use BFInst::*;
         use StackInst::*;
+
+        bf.push(Dbg(format!("{:?}", inst).leak()));
+
         match inst {
             PushB(b) => {
                 bf.push(Right);
@@ -80,42 +94,53 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
             SwapB => {
                 bf.extend(BFInst::parse(
                     "
-                    [->+<]     // Copy 1
-                    <[->+<]    // Shift 2 into 1
-                    >>[-<<+>>] // Shift copy into 2
-                    <          // Move to head
+                    <[->>+<<] // Move 1 into 3
+                    >[-<+>]   // Shift 2 into 1
+                    >[-<+>]   // Shift 3 into 2
                     ",
                 ));
             }
-            CopyB => bf.extend(BFInst::parse("[->+<]")),
+            CopyB => bf.extend(BFInst::parse("[->+>+<<]>>[-<<+>>]<")),
             AddB => bf.extend(BFInst::parse("[-<+>]<")),
             Alloc(n) => bf.extend(repeat_n(Right, n as _)),
-            Dealloc(n) => bf.extend(repeat_n(Left, n as _)),
+            Dealloc(n) => {
+                for _ in 0..n {
+                    bf.extend(BFInst::parse("[-]<"));
+                }
+            }
             LclReadB(n) => {
                 let left = repeat_n(Left, n).collect::<Vec<_>>();
                 let right = repeat_n(Right, n).collect::<Vec<_>>();
                 bf.extend(&left);
                 bf.extend(BFInst::parse("[-"));
                 bf.extend(&right);
-                bf.extend(BFInst::parse(">+<"));
+                bf.extend(BFInst::parse(">+>+<<")); // Make 2 copies
                 bf.extend(&left);
                 bf.extend(BFInst::parse("]"));
+                bf.extend(&right);
+                bf.extend(BFInst::parse(">>[-<<")); // Move 1 copy back
+                bf.extend(&left);
+                bf.extend(BFInst::parse("+"));
+                bf.extend(&right);
+                bf.extend(BFInst::parse(">>]<"))
             }
             LclStrB(n) => {
                 let left = repeat_n(Left, n).collect::<Vec<_>>();
                 let right = repeat_n(Right, n).collect::<Vec<_>>();
                 bf.extend(&left);
-                bf.extend(BFInst::parse("<[-]")); // Erase previous value
+                bf.extend(BFInst::parse("[-]")); // Erase previous value
                 bf.extend(&right);
-                bf.extend(BFInst::parse(">[-")); // Enter move loop
+                bf.extend(BFInst::parse("[-")); // Enter move loop
                 bf.extend(&left);
-                bf.extend(BFInst::parse("<+")); // Shift 1 unit over
+                bf.extend(BFInst::parse("+")); // Shift 1 unit over
                 bf.extend(&right);
-                bf.extend(BFInst::parse(">]<")); // Exit loop and move stack head
+                bf.extend(BFInst::parse("]<")); // Exit loop and move stack head
             }
             Label(n) if n != 0 => {
-                bf.extend(BFInst::parse("<[->+<]>")); // Move to, and then copy, label
+                bf.extend(BFInst::parse("<[->+>+<<]>>[-<<+>>]<")); // Move to, and then copy, label
+                bf.push(Dbg("Label Copy"));
                 bf.extend(repeat_n(Dec, n as _)); // Check equality
+                bf.push(Dbg("Decremented"));
                 bf.extend(BFInst::parse(
                     "
                     >+<      // Push 1
@@ -123,16 +148,20 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                     >[-<+>]< // Move 1 if (label == n) else leave 0
                     ",
                 ));
+                bf.push(Dbg("Equality checked"));
                 bf.extend(BFInst::parse("[-<[-]<"));
+                bf.push(Dbg("Label Finish"));
                 // Enter block if label at head
                 // Then, discard equality check and label, and point to stack
             }
             Goto => bf.extend(BFInst::parse(">]")),
-            PrintChar => bf.push(Out),
+            PrintChar => bf.extend(BFInst::parse(".[-]<")),
             Label(0) | Nop | Debug(_) | Comment(_) => {}
             i => todo!("{:?}", i),
         }
     }
+
+    bf.extend(BFInst::parse("]"));
 
     bf
 }

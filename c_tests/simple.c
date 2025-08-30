@@ -1,5 +1,7 @@
 int main() {
-  int x = 10;
-  int y = 2;
-  print(x + y + 1);
+  int r = 64;
+  int h = r + 8;
+  int i = r + 9;
+  print(h);
+  print(i);
 }

@@ -51,6 +51,7 @@ impl ASTNode for Program {
 
     fn compile(&self, ctxt: &mut CompileContext) {
         use StackInst::*;
+        let init_lbl = ctxt.label(); // Always equal to 1
 
         // Declarations
         for f in self.funs.keys() {
@@ -61,6 +62,8 @@ impl ASTNode for Program {
             let (_, ty, _) = &self.vars[v];
             ctxt.global_decl(v, ty);
         }
+
+        ctxt.emit(Label(init_lbl));
 
         // Allocate space for globals
         ctxt.emit(Alloc(ctxt.global_offset));

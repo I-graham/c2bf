@@ -20,8 +20,7 @@ fn main() {
 
     println!("\nExecution:\n");
 
-    dbg!(&stream);
-
     let transpilation = asm_to_bf(&stream);
+
     exec_bf(&transpilation);
 }

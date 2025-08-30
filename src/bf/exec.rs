@@ -13,6 +13,7 @@ pub fn exec_bf(code: &[BFInst]) {
     while ip < code.len() {
         use BFInst::*;
         match code[ip] {
+            Dbg(_) => {}
             Left => head -= 1,
             Right => {
                 head += 1;
@@ -20,14 +21,14 @@ pub fn exec_bf(code: &[BFInst]) {
                     stack.push(0);
                 }
             }
-            Inc => stack[head] += 1,
-            Dec => stack[head] -= 1,
+            Inc => stack[head] = stack[head].wrapping_add(1),
+            Dec => stack[head] = stack[head].wrapping_sub(1),
             In => {
                 let mut buf = [0];
                 stdin.read_exact(&mut buf).expect("No input");
                 stack[head] = buf[0];
             }
-            Out => print!("{}", char::from(stack[head])),
+            Out => print!("{}", stack[head] as char),
             LBrac => {
                 if stack[head] == 0 {
                     ip = map[&ip];
