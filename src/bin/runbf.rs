@@ -18,9 +18,10 @@ fn main() {
 
     let CompileContext { stream, .. } = ctxt;
 
-    dbg!(&stream);
-
     println!("\nExecution:\n");
 
-    exec_stack_program(&stream);
+    dbg!(&stream);
+
+    let transpilation = asm_to_bf(&stream);
+    exec_bf(&transpilation);
 }

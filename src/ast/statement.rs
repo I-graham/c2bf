@@ -120,7 +120,7 @@ impl ASTNode for Stmt {
             }
             ExprStmt(Some(expr)) => {
                 ctxt.compile(expr);
-                ctxt.emit(DiscardW);
+                ctxt.emit(DiscardB);
             }
             ExprStmt(None) => {}
             SeqStmt(stmts) => {
@@ -131,21 +131,20 @@ impl ASTNode for Stmt {
 
             Print(expr) => {
                 ctxt.compile(expr);
-                ctxt.emit(PrintI32);
+                ctxt.emit(PrintChar);
             }
 
             Return(e) => {
                 if let Some(expr) = e {
                     ctxt.compile(expr);
                     ctxt.emit_stream(&[
-                        Move(ctxt.local_offset),          // replace stack pointer
-                        PushW(ctxt.local_offset as Word), // Dealloc stack pointer
-                        StackDealloc,
-                        SwapW,
+                        Move(ctxt.local_offset),    // replace stack pointer
+                        Dealloc(ctxt.local_offset), // Dealloc stack pointer
+                        SwapB,
                         Goto,
                     ]);
                 } else {
-                    ctxt.emit_stream(&[PushW(ctxt.local_offset as Word), StackDealloc, Goto]);
+                    ctxt.emit_stream(&[Dealloc(ctxt.local_offset), Goto]);
                 }
             }
             IfStmt(cond, body) => {
@@ -155,7 +154,7 @@ impl ASTNode for Stmt {
                 ctxt.compile(cond);
                 ctxt.emit_stream(&[Branch(t_lbl, e_lbl), Label(t_lbl)]);
                 ctxt.compile(body);
-                ctxt.emit_stream(&[PushW(e_lbl), Goto, Label(e_lbl)]);
+                ctxt.emit_stream(&[PushB(e_lbl), Goto, Label(e_lbl)]);
             }
             IfElseStmt(cond, t_body, f_body) => {
                 let t_lbl = ctxt.label();
@@ -165,20 +164,20 @@ impl ASTNode for Stmt {
                 ctxt.compile(cond);
                 ctxt.emit_stream(&[Branch(t_lbl, f_lbl), Label(t_lbl)]);
                 ctxt.compile(t_body);
-                ctxt.emit_stream(&[PushW(e_lbl), Goto, Label(f_lbl)]);
+                ctxt.emit_stream(&[PushB(e_lbl), Goto, Label(f_lbl)]);
                 ctxt.compile(f_body);
-                ctxt.emit_stream(&[PushW(e_lbl), Goto, Label(e_lbl)]);
+                ctxt.emit_stream(&[PushB(e_lbl), Goto, Label(e_lbl)]);
             }
             While(cond, body) => {
                 let start = ctxt.label();
                 let t_lbl = ctxt.label();
                 let f_lbl = ctxt.label();
 
-                ctxt.emit_stream(&[PushW(start), Goto, Label(start)]);
+                ctxt.emit_stream(&[PushB(start), Goto, Label(start)]);
                 ctxt.compile(cond);
                 ctxt.emit_stream(&[Branch(t_lbl, f_lbl), Label(t_lbl)]);
                 ctxt.compile(body);
-                ctxt.emit_stream(&[PushW(start), Goto, Label(f_lbl)]);
+                ctxt.emit_stream(&[PushB(start), Goto, Label(f_lbl)]);
             }
             For(init, cond, end, body) => {
                 let c_lbl = ctxt.label();
@@ -186,15 +185,15 @@ impl ASTNode for Stmt {
                 let leave = ctxt.label();
 
                 ctxt.compile(init);
-                ctxt.emit_stream(&[PushW(c_lbl), Goto, Label(c_lbl)]);
+                ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(c_lbl)]);
                 match cond {
                     Some(cond) => ctxt.compile(cond),
-                    None => ctxt.emit(PushW(1)),
+                    None => ctxt.emit(PushB(1)),
                 }
                 ctxt.emit_stream(&[Branch(b_lbl, leave), Label(b_lbl)]);
                 ctxt.compile(body);
                 ctxt.compile(&ExprStmt(end.clone()));
-                ctxt.emit_stream(&[PushW(c_lbl), Goto, Label(leave)]);
+                ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(leave)]);
             }
             _ => todo!(),
         }

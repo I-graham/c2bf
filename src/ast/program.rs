@@ -62,10 +62,8 @@ impl ASTNode for Program {
             ctxt.global_decl(v, ty);
         }
 
-        ctxt.emit_stream(&[
-            PushW(ctxt.global_offset as Word),
-            StackAlloc, // Allocate space for globals
-        ]);
+        // Allocate space for globals
+        ctxt.emit(Alloc(ctxt.global_offset));
 
         for v in &self.order {
             let (_, _, e) = &self.vars[v];
@@ -74,7 +72,7 @@ impl ASTNode for Program {
             ctxt.emit(Comment(v.clone().leak()));
             ctxt.compile(&def);
             ctxt.push_addr(v);
-            ctxt.emit(GlobalStore);
+            ctxt.emit(GblStrB);
         }
 
         // Call main()
@@ -86,5 +84,8 @@ impl ASTNode for Program {
         for (f, (_, ps, b)) in &self.funs {
             ctxt.fdef(f, ps, b);
         }
+
+        // Label 0 is always Exit
+        ctxt.emit(Label(0));
     }
 }

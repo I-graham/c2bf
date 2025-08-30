@@ -8,7 +8,7 @@ int is_square(int n) {
 }
 
 int main() {
-  for (int i = 1; i < 100;) {
+  for (int i = 1; i <= 100;) {
     if (is_square(i)) print(i);
     i = i + 1;
   }

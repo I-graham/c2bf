@@ -14,7 +14,7 @@ pub enum DType {
     Float,
     Double,
     Pointer(usize, Box<Self>), // Level of indirection + base type
-    Array(u32, Box<DType>),
+    Array(Word, Box<DType>),
     Unsized(Box<DType>),
     Function(Vec<DType>, Box<DType>),
 }
@@ -96,7 +96,7 @@ impl DType {
         }
     }
 
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> Word {
         use DType::*;
         match self {
             Void => 0,

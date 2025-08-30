@@ -10,7 +10,7 @@ pub fn exec_stack_program(code: &[StackInst]) {
 
 #[derive(Default)]
 pub struct StackMachine {
-    pub stack: Vec<u32>,
+    pub stack: Vec<Word>,
     pub ip: usize,
 }
 
@@ -36,46 +36,47 @@ impl StackMachine {
             }
 
             match inst {
+                Exit | Label(0) => {
+                    break;
+                }
                 Debug(l) => {
                     println!("Stack @ {}: {:?}", l, self.stack);
                 }
                 Nop | Label(_) | Comment(_) => (),
-                PushW(b) => self.stack.push(b),
-                DiscardW => {
+                PushB(b) => self.stack.push(b),
+                DiscardB => {
                     self.stack.pop();
                 }
-                PrintI32 => {
+                PrintChar => {
                     println!("{}", self.stack.pop().unwrap());
                 }
 
-                StackAlloc => {
-                    let size = self.stack.pop().unwrap() as usize;
+                Alloc(n) => {
                     let len = self.stack.len();
-                    self.stack.resize(len + size, 0);
+                    self.stack.resize(len + n, 0);
                 }
-                StackDealloc => {
-                    let size = self.stack.pop().unwrap() as usize;
+                Dealloc(n) => {
                     let len = self.stack.len();
-                    self.stack.resize(len - size, 0);
+                    self.stack.resize(len - n, 0);
                 }
                 Move(d) => {
                     let n = self.stack.len() - 1;
                     let word = *self.stack.last().unwrap();
                     self.stack[n - d] = word;
                 }
-                SwapW => {
+                SwapB => {
                     let a = self.stack.pop().unwrap();
                     let b = self.stack.pop().unwrap();
 
                     self.stack.push(a);
                     self.stack.push(b);
                 }
-                CopyW => {
+                CopyB => {
                     let top = *self.stack.last().unwrap();
                     self.stack.push(top);
                 }
 
-                GlobalRead => {
+                GblReadB => {
                     let addr = self.stack.pop().unwrap();
                     let value = self
                         .stack
@@ -83,7 +84,7 @@ impl StackMachine {
                         .expect("Global address does not exist.");
                     self.stack.push(*value)
                 }
-                GlobalStore => {
+                GblStrB => {
                     let addr = self.stack.pop().unwrap();
                     let word = self.stack.pop().unwrap();
 
@@ -92,13 +93,13 @@ impl StackMachine {
                         .get_mut(addr as usize)
                         .expect("Global address does not exist.") = word;
                 }
-                LocalRead(addr) => {
+                LclReadB(addr) => {
                     let addr = self.stack.len() - 1 - addr;
                     let value = *self.stack.get(addr).expect("Address does not exist");
 
                     self.stack.push(value);
                 }
-                LocalStore(addr) => {
+                LclStrB(addr) => {
                     let word = self.stack.pop().unwrap();
                     let addr = self.stack.len() - addr;
 
@@ -115,18 +116,15 @@ impl StackMachine {
                     ip = labels[&addr];
                     continue;
                 }
-                Exit => {
-                    break;
-                }
 
-                o @ (Add | Sub | Mul | Div) => {
+                o @ (AddB | SubB | MulB | DivB) => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     let out = match o {
-                        Add => a + b,
-                        Sub => a - b,
-                        Mul => a * b,
-                        Div => a / b,
+                        AddB => a + b,
+                        SubB => a - b,
+                        MulB => a * b,
+                        DivB => a / b,
                         _ => unreachable!(),
                     };
                     self.stack.push(out)

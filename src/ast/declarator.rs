@@ -8,7 +8,7 @@ pub enum Declarator {
     Var(Ident),
     Deref(usize, Box<Self>),
     Call(Box<Self>, Vec<ParamDecl>),
-    Index(Box<Self>, u32),
+    Index(Box<Self>, Word),
     Unsized(Box<Self>),
 }
 
@@ -59,7 +59,7 @@ impl ASTNode for Declarator {
                                 let size_expr = ext.into_inner().last().unwrap();
                                 let size_expr = Expr::parse(size_expr);
                                 if let Some(size) = size_expr.const_arithmetic_expr() {
-                                    Index(base.into(), size as u32)
+                                    Index(base.into(), size as Word)
                                 } else {
                                     // VLA
                                     base.pointed()

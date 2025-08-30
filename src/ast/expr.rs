@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub enum Expr {
-    ConstW(u32),
+    ConstW(Word),
     Var(Ident),
     BinOpExpr(Box<Expr>, Vec<(BinOp, Expr)>),
     Unary(MonOp, Box<Expr>),
@@ -28,7 +28,7 @@ impl ASTNode for Expr {
             pair:
 
             IDENTIFIER [] -> Var(s.into());
-            CONSTANT [] -> ConstW(s.parse::<u32>().unwrap());
+            CONSTANT [] -> ConstW(s.parse::<Word>().unwrap());
 
             primary_expr
                 [e] -> e;
@@ -119,19 +119,19 @@ impl ASTNode for Expr {
         use Expr::*;
         use StackInst::*;
         match self {
-            ConstW(v) => ctxt.emit(PushW(*v)),
+            ConstW(v) => ctxt.emit(PushB(*v)),
             Var(v) => ctxt.push_var(v),
             Unary(_op, _e) => todo!(),
-            TypeSize(ty) => ctxt.emit(PushW(ty.size())),
+            TypeSize(ty) => ctxt.emit(PushB(ty.size())),
             BinOpExpr(head, args) => {
                 ctxt.compile(head);
 
                 for (op, arg) in args {
                     let op = match op {
-                        BinOp::Add => Add,
-                        BinOp::Sub => Sub,
-                        BinOp::Mul => Mul,
-                        BinOp::Div => Div,
+                        BinOp::Add => AddB,
+                        BinOp::Sub => SubB,
+                        BinOp::Mul => MulB,
+                        BinOp::Div => DivB,
                         BinOp::Eq => Eq,
                         BinOp::Neq => Neq,
                         BinOp::Lt => Lt,
@@ -155,7 +155,7 @@ impl ASTNode for Expr {
                 ctxt.compile(seqs.next().unwrap());
 
                 for seq in seqs {
-                    ctxt.emit(DiscardW);
+                    ctxt.emit(DiscardB);
                     ctxt.compile(seq);
                 }
             }
@@ -163,7 +163,7 @@ impl ASTNode for Expr {
             Assign(var, BinOp::Set, val) => {
                 let Expr::Var(v) = &**var else { todo!() };
                 ctxt.compile(val);
-                ctxt.emit(CopyW);
+                ctxt.emit(CopyB);
                 ctxt.store(v);
             }
 

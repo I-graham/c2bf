@@ -16,7 +16,9 @@ fn main() {
 
     parsed.compile(&mut ctxt);
 
-    let CompileContext { stream, .. } = ctxt;
+    let CompileContext { mut stream, .. } = ctxt;
+
+    StackInst::expand(&mut stream);
 
     dbg!(&stream);
 
