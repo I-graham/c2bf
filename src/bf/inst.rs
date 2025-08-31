@@ -154,6 +154,45 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 // Enter block if label at head
                 // Then, discard equality check and label, and point to stack
             }
+            Eq => bf.extend(BFInst::parse("<[>-<-]>[[-]<+>]<")),
+            Neq => bf.extend(BFInst::parse("[-<->]<")), // Check equality
+            LNot => bf.extend(BFInst::parse(
+                "
+                >+<      // Place 1
+                [[-]>-<] // If non-zero then erase 1
+                >[-<+>]< // Move 1 (or 0)
+                ",
+            )),
+            Lt => bf.extend(BFInst::parse(
+                // Memory layout: y x
+                // Return value: nonzero iff x < y
+                // Note: if x==0 then we can just return y
+                // If not we use the loop to decrement each repeatedly until one is 0
+                "
+                [ // Comparison loop
+                    -<->            // Decrement x and y
+                    >>+<<           // Needed to detect if we shifted
+                    [>]             // Shift if x == 0
+                    >[-<<           // Enter block if x == 0 then point to x
+                        [-]<[-]+    // Clear x & y then push return value (true)
+                        >>          // Point back to the right of x
+                    ]
+                    <<      // Now we will check if y == 0
+                    [>]     // point to x if y == 0 else point to the right of x
+                    >[[-]<] // If y == 0 then clear x and shift to the right of x for parity 
+                    < // Move back to x
+                ]
+                < // shift pointer to head
+                ",
+            )),
+            Branch(t, f) => {
+                bf.push(Right);
+                bf.extend(repeat_n(Inc, f.wrapping_sub(t) as _));
+                bf.push(Left);
+                bf.extend(BFInst::parse("[[-]>"));
+                bf.extend(repeat_n(Inc, t as _));
+                bf.extend(BFInst::parse("]>[-<+>]<"));
+            }
             Goto => bf.extend(BFInst::parse(">]")),
             PrintChar => bf.extend(BFInst::parse(".[-]<")),
             Label(0) | Nop | Debug(_) | Comment(_) => {}

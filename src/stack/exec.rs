@@ -129,7 +129,6 @@ impl StackMachine {
                     };
                     self.stack.push(out)
                 }
-
                 LNot => {
                     let word = self.stack.pop().unwrap();
                     let not = if word == 0 { 1 } else { 0 };

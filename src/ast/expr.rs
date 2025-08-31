@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub enum Expr {
-    ConstW(Word),
+    Const(usize),
     Var(Ident),
     BinOpExpr(Box<Expr>, Vec<(BinOp, Expr)>),
     Unary(MonOp, Box<Expr>),
@@ -28,7 +28,12 @@ impl ASTNode for Expr {
             pair:
 
             IDENTIFIER [] -> Var(s.into());
-            CONSTANT [] -> ConstW(s.parse::<Word>().unwrap());
+            CONSTANT [e] -> e;
+            decimal [] -> Const(s.parse::<usize>().unwrap());
+            octal [] -> Const(usize::from_str_radix(s, 8).unwrap());
+            hexadecimal [] -> Const(usize::from_str_radix(s, 16).unwrap());
+            character [] -> Const(s.chars().nth(1).unwrap() as usize);
+            string_literal [] -> todo!();
 
             primary_expr
                 [e] -> e;
@@ -119,7 +124,7 @@ impl ASTNode for Expr {
         use Expr::*;
         use StackInst::*;
         match self {
-            ConstW(v) => ctxt.emit(PushB(*v)),
+            Const(v) => ctxt.emit(PushB(*v as Word)),
             Var(v) => ctxt.push_var(v),
             Unary(_op, _e) => todo!(),
             TypeSize(ty) => ctxt.emit(PushB(ty.size())),
@@ -176,7 +181,7 @@ impl Expr {
     pub fn const_arithmetic_expr(&self) -> Option<u64> {
         use Expr::*;
         match self {
-            ConstW(v) => Some(*v as u64),
+            Const(v) => Some(*v as u64),
             BinOpExpr(expr, items) => {
                 let mut e_val = expr.const_arithmetic_expr()?;
                 for (op, e) in items {

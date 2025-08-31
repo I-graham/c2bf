@@ -1,6 +1,23 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-CONSTANT = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
+CONSTANT =
+	{ decimal
+	| octal
+	| hexadecimal
+	| character
+	| string_literal
+	}
+
+	decimal = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+) | ASCII_DIGIT }
+	octal = @{ "0" ~ ASCII_DIGIT+ }
+	hexadecimal = @{ "0x" ~ ASCII_DIGIT+ }
+	character = @{ "'" ~ ASCII ~ "'" }
+	string_literal = @{ "\"" ~ char* ~ "\""}
+	char = {
+	    !("\"" | "\\") ~ ANY
+	    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+	    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+	}
 
 IDENTIFIER = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 

@@ -18,9 +18,10 @@ fn main() {
 
     let CompileContext { stream, .. } = ctxt;
 
-    println!("\nExecution:\n");
-
     let transpilation = asm_to_bf(&stream);
+    println!("{}", BFInst::show_code(&transpilation, true));
+
+    println!("\nExecution:\n");
 
     exec_bf(&transpilation);
 }
