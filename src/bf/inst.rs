@@ -138,9 +138,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
             }
             Label(n) if n != 0 => {
                 bf.extend(BFInst::parse("<[->+>+<<]>>[-<<+>>]<")); // Move to, and then copy, label
-                bf.push(Dbg("Label Copy"));
                 bf.extend(repeat_n(Dec, n as _)); // Check equality
-                bf.push(Dbg("Decremented"));
                 bf.extend(BFInst::parse(
                     "
                     >+<      // Push 1
@@ -148,9 +146,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                     >[-<+>]< // Move 1 if (label == n) else leave 0
                     ",
                 ));
-                bf.push(Dbg("Equality checked"));
                 bf.extend(BFInst::parse("[-<[-]<"));
-                bf.push(Dbg("Label Finish"));
                 // Enter block if label at head
                 // Then, discard equality check and label, and point to stack
             }
@@ -163,35 +159,34 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >[-<+>]< // Move 1 (or 0)
                 ",
             )),
-            Lt => bf.extend(BFInst::parse(
-                // Memory layout: y x
-                // Return value: nonzero iff x < y
-                // Note: if x==0 then we can just return y
-                // If not we use the loop to decrement each repeatedly until one is 0
-                "
-                [ // Comparison loop
-                    -<->            // Decrement x and y
-                    >>+<<           // Needed to detect if we shifted
-                    [>]             // Shift if x == 0
-                    >[-<<           // Enter block if x == 0 then point to x
-                        [-]<[-]+    // Clear x & y then push return value (true)
-                        >>          // Point back to the right of x
-                    ]
-                    <<      // Now we will check if y == 0
-                    [>]     // point to x if y == 0 else point to the right of x
-                    >[[-]<] // If y == 0 then clear x and shift to the right of x for parity 
-                    < // Move back to x
+            Lt => {
+                bf.push(Dbg("Less than"));
+                bf.extend(BFInst::parse(
+                    // Memory layout: y x
+                    // Return value: nonzero iff x < y
+                    // Note: if x==0 then we can just return y
+                    // If not we use the loop to decrement each repeatedly until one is 0
+                    "
+                >+< // return value = true
+                [ // while x != 0
+                    <[>] // point to y then split based on if y=0
+                    >[<+>[-]+>[-]>>]<<< // If y=0 then set x=y=1 & clear return value
+                    -<-> // Decrement x & y                    
                 ]
-                < // shift pointer to head
+                <[-] // clear y
+                >>[-<<+>>]<< // Push return value
                 ",
-            )),
+                ));
+                bf.push(Dbg("Finished"));
+            }
             Branch(t, f) => {
                 bf.push(Right);
-                bf.extend(repeat_n(Inc, f.wrapping_sub(t) as _));
+                bf.extend(repeat_n(Inc, t.wrapping_sub(f) as _));
                 bf.push(Left);
                 bf.extend(BFInst::parse("[[-]>"));
-                bf.extend(repeat_n(Inc, t as _));
-                bf.extend(BFInst::parse("]>[-<+>]<"));
+                bf.extend(repeat_n(Inc, f as _));
+                bf.extend(BFInst::parse("<]>[-<+>]<"));
+                bf.extend(BFInst::parse(">]"));
             }
             Goto => bf.extend(BFInst::parse(">]")),
             PrintChar => bf.extend(BFInst::parse(".[-]<")),

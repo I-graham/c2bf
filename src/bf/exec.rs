@@ -13,7 +13,11 @@ pub fn exec_bf(code: &[BFInst]) {
     while ip < code.len() {
         use BFInst::*;
         match code[ip] {
-            Dbg(_) => {}
+            Dbg(s) => {
+                // dbg!(head);
+                // dbg!(&stack);
+                // dbg!(s);
+            }
             Left => head -= 1,
             Right => {
                 head += 1;
