@@ -135,6 +135,7 @@ impl ASTNode for Stmt {
             }
 
             Return(e) => {
+                let lbl = ctxt.label();
                 if let Some(expr) = e {
                     ctxt.compile(expr);
                     ctxt.emit_stream(&[
@@ -142,9 +143,10 @@ impl ASTNode for Stmt {
                         Dealloc(ctxt.local_offset), // Dealloc stack pointer
                         SwapB,
                         Goto,
+                        Label(lbl),
                     ]);
                 } else {
-                    ctxt.emit_stream(&[Dealloc(ctxt.local_offset), Goto]);
+                    ctxt.emit_stream(&[Dealloc(ctxt.local_offset), Goto, Label(lbl)]);
                 }
             }
             IfStmt(cond, body) => {

@@ -61,8 +61,9 @@ impl StackInst {
 
         while let Some(inst) = stream.pop() {
             let mut expansion = match inst {
-                Move(d) => [CopyB, LclReadB(d + 1)],
+                Move(d) => [CopyB, LclStrB(d + 1)],
                 Exit => [PushB(0), Goto],
+                Eq => [Neq, LNot],
                 // All comparisons are in terms of GrEq
                 LtEq => [SwapB, GrEq],
                 Lt => [GrEq, LNot],

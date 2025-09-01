@@ -163,12 +163,11 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 // Enter block if label at head
                 // Then, discard equality check and label, and point to stack
             }
-            Eq => bf.extend(BFInst::parse("<[>-<-]>[[-]<+>]<")),
             Neq => bf.extend(BFInst::parse("[-<->]<")), // Check equality
             LNot => bf.extend(BFInst::parse(
                 "
                 >+<      // Place 1
-                [[-]>-<] // If non-zero then erase 1
+                [[-]>-<] // If nonzero then erase 1
                 >[-<+>]< // Move 1 (or 0)
                 ",
             )),
@@ -191,10 +190,10 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
 
             Branch(t, f) => {
                 bf.push(Right);
-                bf.extend(repeat_n(Inc, t.wrapping_sub(f) as _));
+                bf.extend(repeat_n(Inc, f as _));
                 bf.push(Left);
                 bf.extend(BFInst::parse("[[-]>"));
-                bf.extend(repeat_n(Inc, f as _));
+                bf.extend(repeat_n(Inc, t.wrapping_sub(f) as _));
                 bf.extend(BFInst::parse("<]>[-<+>]<"));
                 bf.extend(BFInst::parse(">]"));
             }
@@ -205,7 +204,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
         }
     }
 
-    bf.extend(BFInst::parse("]"));
+    bf.extend(BFInst::parse("<]"));
 
     bf
 }

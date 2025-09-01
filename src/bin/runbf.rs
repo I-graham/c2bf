@@ -18,6 +18,8 @@ fn main() {
 
     let CompileContext { stream, .. } = ctxt;
 
+    dbg!(&stream);
+
     let transpilation = asm_to_bf(&stream);
     println!(
         "{}",

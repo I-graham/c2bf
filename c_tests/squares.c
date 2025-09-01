@@ -9,7 +9,7 @@ int is_square(int n) {
 
 int main() {
   for (int i = 1; i <= 100;) {
-    if (is_square(i)) print(i);
+    print(is_square(i)+'0');
     i = i + 1;
   }
 }
