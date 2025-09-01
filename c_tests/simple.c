@@ -1,12 +1,10 @@
 int main() {
-  char r = 'A';
-  char h = r + 7;
-  char i = r + 8;
+  char r = 'A'-1;
+  char h = r + 8;
+  char i = r + 4*2+1;
   print(h);
   print(i);
 
-  if (0 <= 0) {
-    print(h);
-    print(i);
-  }
+  print(r - 8 * 4 + 1);
+
 }

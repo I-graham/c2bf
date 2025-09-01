@@ -13,10 +13,13 @@ pub fn exec_bf(code: &[BFInst]) {
     while ip < code.len() {
         use BFInst::*;
         match code[ip] {
-            Dbg(s) => {
-                // dbg!(head);
-                // dbg!(&stack);
-                // dbg!(s);
+            Dbg(_msg) => {
+                #[cfg(feature = "debugbf")]
+                {
+                    dbg!(head);
+                    dbg!(&stack);
+                    dbg!(_msg);
+                }
             }
             Left => head -= 1,
             Right => {

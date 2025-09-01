@@ -91,18 +91,30 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
             DiscardB => {
                 bf.extend(BFInst::parse("[-]<"));
             }
-            SwapB => {
-                bf.extend(BFInst::parse(
-                    "
-                    <[->>+<<] // Move 1 into 3
-                    >[-<+>]   // Shift 2 into 1
-                    >[-<+>]   // Shift 3 into 2
-                    <         // Point back at 2
-                    ",
-                ));
-            }
+            SwapB => bf.extend(BFInst::parse(
+                "
+                <[->>+<<] // Move 1 into 3
+                >[-<+>]   // Shift 2 into 1
+                >[-<+>]   // Shift 3 into 2
+                <         // Point back at 2
+                ",
+            )),
+
             CopyB => bf.extend(BFInst::parse("[->+>+<<]>>[-<<+>>]<")),
+            MulB => bf.extend(BFInst::parse(
+                "
+                <[->>+<<]        // Make room for return value
+                >[-              // repeat x times
+                   >[->+>+<<]    // copy y to 2 new stack locations
+                   >>[-<<+>>]    // Use one of these copies to replace y
+                   <[-<<<+>>>]   // Add other one of these to the return value
+                   <<            // Point back at x
+                ]
+                >[-]<<           // clear y & point at x
+                ",
+            )),
             AddB => bf.extend(BFInst::parse("[-<+>]<")),
+            SubB => bf.extend(BFInst::parse("[-<->]<")),
             Alloc(n) => bf.extend(repeat_n(Right, n as _)),
             Dealloc(n) => {
                 for _ in 0..n {
@@ -160,24 +172,23 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >[-<+>]< // Move 1 (or 0)
                 ",
             )),
-            GrEq => {
-                bf.extend(BFInst::parse(
-                    // Memory layout: y x
-                    // Return value: nonzero iff x < y
-                    // Note: if x==0 then we can just return y
-                    // If not we use the loop to decrement each repeatedly until one is 0
-                    "
-                >+< // return value = true
-                [ // while x != 0
-                    <[>] // point to y then split based on if y=0
+            GrEq => bf.extend(BFInst::parse(
+                // Memory layout: y x
+                // Return value: nonzero iff x < y
+                // Note: if x==0 then we can just return y
+                // If not we use the loop to decrement each repeatedly until one is 0
+                "
+                >+<                     // return value = true
+                [                       // while x != 0
+                    <[>]                // point to y then split based on if y=0
                     >[<+>[-]+>[-]>>]<<< // If y=0 then set x=y=1 & clear return value
-                    -<-> // Decrement x & y                    
+                    -<->                // Decrement x & y                    
                 ]
-                <[-] // clear y
-                >>[-<<+>>]<< // Push return value
+                <[-]                    // clear y
+                >>[-<<+>>]<<            // Push return value
                 ",
-                ));
-            }
+            )),
+
             Branch(t, f) => {
                 bf.push(Right);
                 bf.extend(repeat_n(Inc, t.wrapping_sub(f) as _));
