@@ -63,6 +63,10 @@ impl StackInst {
             let mut expansion = match inst {
                 Move(d) => [CopyB, LclReadB(d + 1)],
                 Exit => [PushB(0), Goto],
+                // All comparisons are in terms of GrEq
+                LtEq => [SwapB, GrEq],
+                Lt => [GrEq, LNot],
+                Gr => [LtEq, LNot],
                 _ => {
                     out.push(inst);
                     continue;

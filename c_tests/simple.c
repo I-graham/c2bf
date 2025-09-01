@@ -5,7 +5,7 @@ int main() {
   print(h);
   print(i);
 
-  if (2 < 1) {
+  if (0 <= 0) {
     print(h);
     print(i);
   }

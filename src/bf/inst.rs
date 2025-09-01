@@ -97,6 +97,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                     <[->>+<<] // Move 1 into 3
                     >[-<+>]   // Shift 2 into 1
                     >[-<+>]   // Shift 3 into 2
+                    <         // Point back at 2
                     ",
                 ));
             }
@@ -159,8 +160,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >[-<+>]< // Move 1 (or 0)
                 ",
             )),
-            Lt => {
-                bf.push(Dbg("Less than"));
+            GrEq => {
                 bf.extend(BFInst::parse(
                     // Memory layout: y x
                     // Return value: nonzero iff x < y
@@ -177,7 +177,6 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >>[-<<+>>]<< // Push return value
                 ",
                 ));
-                bf.push(Dbg("Finished"));
             }
             Branch(t, f) => {
                 bf.push(Right);
