@@ -145,6 +145,8 @@ impl ASTNode for Expr {
                         BinOp::GrEq => GrEq,
                         BinOp::LAnd => LAnd,
                         BinOp::LOr => LOr,
+                        BinOp::LShift => LShift,
+                        BinOp::RShift => RShift,
                         _ => todo!(),
                     };
 
@@ -192,6 +194,12 @@ impl Expr {
                         Sub => e_val - operand,
                         Mul => e_val * operand,
                         Div => e_val / operand,
+                        Mod => e_val % operand,
+                        LShift => e_val << operand,
+                        RShift => e_val >> operand,
+                        Xor => e_val ^ operand,
+                        And => e_val & operand,
+                        Or => e_val | operand,
                         _ => todo!(),
                     };
                 }
@@ -202,7 +210,7 @@ impl Expr {
                 let e_val = expr.const_arithmetic_expr()?;
                 use MonOp::*;
                 match op {
-                    LogicalNot => Some(!e_val),
+                    BinaryNot => Some(!e_val),
                     _ => todo!(),
                 }
             }

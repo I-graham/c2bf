@@ -10,6 +10,8 @@ pub struct CompileContext {
     pub local_offset: usize,
     pub stack_height: Option<usize>,
     pub stream: Vec<StackInst>,
+    pub ret_lbl: Label,
+    pub loop_exit: (Label, Label), // continue & break labels, respectively
     label_count: Label,
     globals: HashMap<Ident, Word>,
     locals: HashMap<Ident, Word>,
@@ -85,7 +87,7 @@ impl CompileContext {
         use StackInst::*;
 
         if let Some(&addr) = self.globals.get(v) {
-            self.emit_stream(&[PushB(addr), GblStrB]);
+            self.emit_stream(&[PushB(addr), GblReadB]);
             return;
         }
 
@@ -126,8 +128,10 @@ impl CompileContext {
         unreachable!();
     }
 
-    pub fn fdef(&mut self, f: &Ident, params: &Vec<ParamDecl>, body: &Stmt) {
+    pub fn fdef(&mut self, f: &Ident, r: &DType, params: &Vec<ParamDecl>, body: &Stmt) {
         // New Stack Frame
+        self.ret_lbl = self.label();
+
         self.locals.clear();
         self.local_offset = 1; // Include stack pointer in stack frame
 
@@ -159,8 +163,21 @@ impl CompileContext {
 
         self.compile(body);
 
-        // Return to caller, which should have pushed a return label
-        self.emit_stream(&[Dealloc(frame_size), Goto]);
+        if r == &DType::Void {
+            self.emit_stream(&[Dealloc(frame_size), Goto]);
+        } else {
+            // Return to caller, which should have pushed a return label
+            self.emit_stream(&[
+                PushB(0),
+                PushB(self.ret_lbl),
+                Goto,
+                Label(self.ret_lbl),
+                Move(frame_size),
+                Dealloc(frame_size),
+                SwapB,
+                Goto,
+            ]);
+        }
     }
 
     pub fn emit(&mut self, inst: StackInst) {

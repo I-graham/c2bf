@@ -8,7 +8,7 @@ int f(int x, int y) {
 }
 
 int main() {
-  int d = f(b, c) + 6;
+  int d = f(b, c) + 6 << 2;
   if (d <= 20) {
     print(0);
   }
@@ -19,4 +19,5 @@ int main() {
     print(2);
   }
   print(d);
+  return 0;
 }

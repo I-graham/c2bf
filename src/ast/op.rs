@@ -32,6 +32,7 @@ impl ASTNode for BinOp {
             "-" => Sub,
             "*" => Mul,
             "/" => Div,
+            "%" => Mod,
             "==" => Eq,
             "!=" => Neq,
             "<" => Lt,
@@ -40,6 +41,11 @@ impl ASTNode for BinOp {
             ">=" => GrEq,
             "&&" => LAnd,
             "||" => LOr,
+            "<<" => LShift,
+            ">>" => RShift,
+            "&" => And,
+            "|" => Or,
+            "^" => Xor,
             s => unimplemented!("Unknown op `{}`", s),
         }
     }

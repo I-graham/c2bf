@@ -117,7 +117,7 @@ impl StackMachine {
                     continue;
                 }
 
-                o @ (AddB | SubB | MulB | DivB) => {
+                o @ (AddB | SubB | MulB | DivB | LShift | RShift) => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     let out = match o {
@@ -125,6 +125,8 @@ impl StackMachine {
                         SubB => a - b,
                         MulB => a * b,
                         DivB => a / b,
+                        LShift => a << b,
+                        RShift => a >> b,
                         _ => unreachable!(),
                     };
                     self.stack.push(out)

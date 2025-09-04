@@ -20,6 +20,8 @@ pub enum StackInst {
     SubB,
     MulB,
     DivB,
+    LShift,
+    RShift,
 
     // Comparison
     Eq,
@@ -92,9 +94,8 @@ impl StackInst {
 
             SwapB => (2, Some(2)),
             LNot => (1, Some(1)),
-            AddB | SubB | MulB | DivB | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr => {
-                (2, Some(1))
-            }
+            AddB | SubB | MulB | DivB | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr | LShift
+            | RShift => (2, Some(1)),
             Alloc(_) => (0, None),
             Dealloc(_) => (0, None),
             GblStrB => (2, Some(0)),
@@ -126,6 +127,8 @@ impl std::fmt::Debug for StackInst {
             SubB => write!(f, "SubB"),
             MulB => write!(f, "MulB"),
             DivB => write!(f, "DivB"),
+            LShift => write!(f, "LShift"),
+            RShift => write!(f, "RShift"),
             Alloc(n) => write!(f, "Alloc({})", n),
             Dealloc(n) => write!(f, "Dealloc({})", n),
             GblStrB => write!(f, "GblStrB"),

@@ -138,16 +138,8 @@ impl ASTNode for Stmt {
                 let lbl = ctxt.label();
                 if let Some(expr) = e {
                     ctxt.compile(expr);
-                    ctxt.emit_stream(&[
-                        Move(ctxt.local_offset),    // replace stack pointer
-                        Dealloc(ctxt.local_offset), // Dealloc stack pointer
-                        SwapB,
-                        Goto,
-                        Label(lbl),
-                    ]);
-                } else {
-                    ctxt.emit_stream(&[Dealloc(ctxt.local_offset), Goto, Label(lbl)]);
                 }
+                ctxt.emit_stream(&[PushB(ctxt.ret_lbl), Goto, Label(lbl)]);
             }
             IfStmt(cond, body) => {
                 let t_lbl = ctxt.label();
@@ -171,20 +163,27 @@ impl ASTNode for Stmt {
                 ctxt.emit_stream(&[PushB(e_lbl), Goto, Label(e_lbl)]);
             }
             While(cond, body) => {
-                let start = ctxt.label();
+                let c_lbl = ctxt.label();
                 let t_lbl = ctxt.label();
-                let f_lbl = ctxt.label();
+                let leave = ctxt.label();
+                let old_loop_exit = ctxt.loop_exit;
+                ctxt.loop_exit = (c_lbl, leave);
 
-                ctxt.emit_stream(&[PushB(start), Goto, Label(start)]);
+                ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(c_lbl)]);
                 ctxt.compile(cond);
-                ctxt.emit_stream(&[Branch(t_lbl, f_lbl), Label(t_lbl)]);
+                ctxt.emit_stream(&[Branch(t_lbl, leave), Label(t_lbl)]);
                 ctxt.compile(body);
-                ctxt.emit_stream(&[PushB(start), Goto, Label(f_lbl)]);
+                ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(leave)]);
+
+                ctxt.loop_exit = old_loop_exit;
             }
             For(init, cond, end, body) => {
                 let c_lbl = ctxt.label();
                 let b_lbl = ctxt.label();
                 let leave = ctxt.label();
+
+                let old_loop_exit = ctxt.loop_exit;
+                ctxt.loop_exit = (c_lbl, leave);
 
                 ctxt.compile(init);
                 ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(c_lbl)]);
@@ -196,6 +195,32 @@ impl ASTNode for Stmt {
                 ctxt.compile(body);
                 ctxt.compile(&ExprStmt(end.clone()));
                 ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(leave)]);
+
+                ctxt.loop_exit = old_loop_exit;
+            }
+            DoWhile(stmt, cond) => {
+                let l_lbl = ctxt.label();
+                let c_lbl = ctxt.label();
+                let leave = ctxt.label();
+
+                let old_loop_exit = ctxt.loop_exit;
+                ctxt.loop_exit = (c_lbl, leave);
+
+                ctxt.emit_stream(&[PushB(l_lbl), Goto, Label(l_lbl)]);
+                ctxt.compile(stmt);
+                ctxt.emit_stream(&[PushB(c_lbl), Goto, Label(c_lbl)]);
+                ctxt.compile(cond);
+                ctxt.emit_stream(&[Branch(l_lbl, leave), Label(leave)]);
+
+                ctxt.loop_exit = old_loop_exit;
+            }
+            Break => {
+                let lbl = ctxt.label();
+                ctxt.emit_stream(&[PushB(ctxt.loop_exit.1), Goto, Label(lbl)]);
+            }
+            Continue => {
+                let lbl = ctxt.label();
+                ctxt.emit_stream(&[PushB(ctxt.loop_exit.0), Goto, Label(lbl)]);
             }
             _ => todo!(),
         }

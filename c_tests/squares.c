@@ -5,11 +5,13 @@ int is_square(int n) {
     i = i + 1;
   }
   return out;
+  return out;
 }
 
 int main() {
-  for (int i = 1; i <= 100;) {
+  for (int i = 1;;) {
     print(is_square(i)+'0');
     i = i + 1;
+    if (i > 100) break;
   }
 }

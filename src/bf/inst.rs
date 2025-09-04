@@ -187,7 +187,21 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >>[-<<+>>]<<            // Push return value
                 ",
             )),
-
+            LAnd => bf.extend(BFInst::parse(
+                "
+                >++<            // Place 2
+                [[-]>-<]<       // Subtract 1 if rhs is nonzero
+                [[-]>>-<<]      // Subtract 1 if lhs is nonzero
+                >>[-[-<<+>>]]<< // Return result
+                ",
+            )),
+            LOr => bf.extend(BFInst::parse(
+                "
+                [[-]>+<]<
+                [[-]>>+<<]
+                >>[[-]<<+>>]<<
+                ",
+            )),
             Branch(t, f) => {
                 bf.push(Right);
                 bf.extend(repeat_n(Inc, f as _));
