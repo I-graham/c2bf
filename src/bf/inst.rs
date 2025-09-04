@@ -202,6 +202,15 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >>[[-]<<+>>]<<
                 ",
             )),
+            LShift => bf.extend(BFInst::parse("[-<[->>+>+<<<]>>[-<<+>>]>[-<<<+>>>]<<]<")),
+            RShift => bf.extend(BFInst::parse(
+                "
+                <[->>+<<]> // swap x & y
+                [->+>+<[-[-[>+>]>[>>]<]>[>>]<<<]>-[-<+>]<<] // CBA to explain
+                >[-<<+>>]<<
+                ",
+            )),
+
             Branch(t, f) => {
                 bf.push(Right);
                 bf.extend(repeat_n(Inc, f as _));

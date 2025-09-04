@@ -5,6 +5,6 @@ int main() {
   print(h);
   print(i);
 
-  print(r - 8 * 4 + 1);
+  print('0' + (187 >> 2));
 
 }
