@@ -20,8 +20,14 @@ pub enum StackInst {
     SubB,
     MulB,
     DivB,
+
+    // Bitwise Ops
     LShift,
     RShift,
+    And,
+    Or,
+    Xor,
+    Not,
 
     // Comparison
     Eq,
@@ -93,9 +99,9 @@ impl StackInst {
             CopyB => (1, Some(2)),
 
             SwapB => (2, Some(2)),
-            LNot => (1, Some(1)),
+            LNot | Not => (1, Some(1)),
             AddB | SubB | MulB | DivB | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr | LShift
-            | RShift => (2, Some(1)),
+            | RShift | And | Or | Xor => (2, Some(1)),
             Alloc(_) => (0, None),
             Dealloc(_) => (0, None),
             GblStrB => (2, Some(0)),
@@ -149,6 +155,10 @@ impl std::fmt::Debug for StackInst {
             LNot => write!(f, "LNot"),
             LAnd => write!(f, "LAnd"),
             LOr => write!(f, "LOr"),
+            And => write!(f, "And"),
+            Or => write!(f, "Or"),
+            Xor => write!(f, "Xor"),
+            Not => write!(f, "Not"),
         }
     }
 }

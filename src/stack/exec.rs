@@ -117,7 +117,7 @@ impl StackMachine {
                     continue;
                 }
 
-                o @ (AddB | SubB | MulB | DivB | LShift | RShift) => {
+                o @ (AddB | SubB | MulB | DivB | LShift | RShift | And | Or | Xor) => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     let out = match o {
@@ -127,6 +127,9 @@ impl StackMachine {
                         DivB => a / b,
                         LShift => a << b,
                         RShift => a >> b,
+                        And => a & b,
+                        Or => a | b,
+                        Xor => a ^ b,
                         _ => unreachable!(),
                     };
                     self.stack.push(out)
@@ -135,6 +138,10 @@ impl StackMachine {
                     let word = self.stack.pop().unwrap();
                     let not = if word == 0 { 1 } else { 0 };
                     self.stack.push(not);
+                }
+                Not => {
+                    let word = self.stack.pop().unwrap();
+                    self.stack.push(!word);
                 }
 
                 o @ (Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr) => {

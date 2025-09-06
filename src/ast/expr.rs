@@ -126,7 +126,20 @@ impl ASTNode for Expr {
         match self {
             Const(v) => ctxt.emit(PushB(*v as Word)),
             Var(v) => ctxt.push_var(v),
-            Unary(_op, _e) => todo!(),
+            Unary(op, e) => {
+                ctxt.compile(e);
+                let op = match op {
+                    MonOp::LogicalNot => LNot,
+                    MonOp::BinaryNot => Not,
+                    MonOp::Inc => todo!(),
+                    MonOp::Dec => todo!(),
+                    MonOp::SizeOf => todo!(),
+                    MonOp::Deref => todo!(),
+                    MonOp::Negate => todo!(),
+                    MonOp::AddrOf => todo!(),
+                };
+                ctxt.emit(op);
+            }
             TypeSize(ty) => ctxt.emit(PushB(ty.size())),
             BinOpExpr(head, args) => {
                 ctxt.compile(head);
@@ -147,6 +160,9 @@ impl ASTNode for Expr {
                         BinOp::LOr => LOr,
                         BinOp::LShift => LShift,
                         BinOp::RShift => RShift,
+                        BinOp::And => And,
+                        BinOp::Or => Or,
+                        BinOp::Xor => Xor,
                         _ => todo!(),
                     };
 
