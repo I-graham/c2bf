@@ -2,9 +2,9 @@ int main() {
   char r = 'A'-1;
   char h = r + 8;
   char i = r + 4*2+1;
-  print(h);
-  print(i);
+  putchar(h);
+  putchar(i);
 
-  print('0' + (187 >> 2));
+  putchar('0' + (187 >> 2));
 
 }

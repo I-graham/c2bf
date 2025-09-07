@@ -44,7 +44,7 @@ impl StackMachine {
                 }
                 Nop | Label(_) | Comment(_) => (),
                 Push(b) => self.stack.push(b),
-                PrintChar => {
+                PutChar => {
                     println!("{}", self.stack.pop().unwrap());
                 }
 
@@ -101,6 +101,22 @@ impl StackMachine {
                     let addr = self.stack.len() - addr;
 
                     *self.stack.get_mut(addr).expect("Address does not exist") = word;
+                }
+                StkRead => {
+                    dbg!(&self.stack);
+                    let addr = self.stack.pop().unwrap();
+                    let word = *self
+                        .stack
+                        .get(self.stack.len() - addr as usize)
+                        .expect("Address DNE");
+                    self.stack.push(word);
+                }
+                StkStr => {
+                    let addr = self.stack.pop().unwrap() as usize;
+                    let word = self.stack.pop().unwrap();
+                    let addr = self.stack.len() - addr;
+
+                    *self.stack.get_mut(addr).expect("Address DNE") = word;
                 }
 
                 Branch(t, f) => {

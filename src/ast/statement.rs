@@ -131,7 +131,7 @@ impl ASTNode for Stmt {
 
             Print(expr) => {
                 ctxt.compile(expr);
-                ctxt.emit(PrintChar);
+                ctxt.emit(PutChar);
             }
 
             Return(e) => {

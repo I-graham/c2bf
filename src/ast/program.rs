@@ -68,19 +68,29 @@ impl ASTNode for Program {
         // Allocate space for globals
         ctxt.emit(Alloc(ctxt.global_offset));
 
+        ctxt.stack_height = Some(ctxt.global_offset);
         for v in &self.order {
             let (_, _, e) = &self.vars[v];
             let def = e.clone().unwrap();
 
             ctxt.emit(Comment(v.clone().leak()));
             ctxt.compile(&def);
-            ctxt.push_addr(v);
-            ctxt.emit(GblStr);
+            let addr = ctxt.globals[v] as usize;
+            ctxt.emit(LclStr(self.order.len() - addr));
         }
 
         // Call main()
         ctxt.stack_height = Some(0);
-        ctxt.call_fn(&Expr::Var("main".into()), &vec![]);
+        let ret_lbl = ctxt.label();
+        let main_lbl = ctxt.funcs.get("main").unwrap();
+        ctxt.emit_stream(&[
+            Debug("Start main call"),
+            Push(ret_lbl),
+            Push(ctxt.global_offset as _),
+            Push(*main_lbl as _),
+            Goto,
+            Label(ret_lbl),
+        ]);
         ctxt.emit(Exit);
 
         // Definitions

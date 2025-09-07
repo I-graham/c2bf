@@ -257,17 +257,49 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 ",
             )),
 
+            StkRead => {
+                // Prepare state
+                bf.extend(BFInst::parse("-[->+>+<<]>>>"));
+
+                // Taken from the internet: https://www.inshame.com/2008/02/efficient-brainfuck-tables.html (directions flipped)
+                bf.extend(BFInst::parse(
+                    "
+                    <[<<<[->>>>+<<<<]>>[-<+>]>[-<+>]<-]
+                    <<<[->+>>+<<<]>>>[-<<<+>>>]<
+                    [[->+<]<[->+<]>>>>[-<<<<+>>>>]<<-]>>
+                    ",
+                ));
+
+                // Move stack head back
+                bf.extend(BFInst::parse("<<<"))
+            }
+
+            StkStr => {
+                // Prepare state
+                bf.extend(BFInst::parse("[->+>+<<]>>>"));
+
+                bf.extend(BFInst::parse(
+                    "
+                        
+                    ",
+                ));
+            }
+
             Branch(t, f) => {
                 bf.push(Right);
                 bf.extend(repeat_n(Inc, f as _));
                 bf.push(Left);
                 bf.extend(BFInst::parse("[[-]>"));
-                bf.extend(repeat_n(Inc, t.wrapping_sub(f) as _));
+                if t >= f {
+                    bf.extend(repeat_n(Inc, t.wrapping_sub(f) as _));
+                } else {
+                    bf.extend(repeat_n(Dec, f.wrapping_sub(t) as _));
+                }
                 bf.extend(BFInst::parse("<]>[-<+>]<"));
                 bf.extend(BFInst::parse(">]"));
             }
             Goto => bf.extend(BFInst::parse(">]")),
-            PrintChar => bf.extend(BFInst::parse(".[-]<")),
+            PutChar => bf.extend(BFInst::parse(".[-]<")),
             Label(0) | Nop | Debug(_) | Comment(_) => {}
             i => todo!("{:?}", i),
         }

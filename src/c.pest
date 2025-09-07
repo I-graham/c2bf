@@ -273,7 +273,7 @@ stmt =
 	| expr_stmt
 	}
 
-print_stmt = { "print" ~ "(" ~ expr ~ ")" ~ ";"}
+print_stmt = { "putchar" ~ "(" ~ expr ~ ")" ~ ";"}
 
 labeled_stmt =
 	{ IDENTIFIER ~ ":" ~ stmt

@@ -12,10 +12,10 @@ pub struct CompileContext {
     pub stream: Vec<StackInst>,
     pub ret_lbl: Label,
     pub loop_exit: (Label, Label), // continue & break labels, respectively
-    label_count: Label,
-    globals: HashMap<Ident, Word>,
+    pub funcs: HashMap<Ident, Label>,
+    pub globals: HashMap<Ident, Word>,
     locals: HashMap<Ident, Word>,
-    funcs: HashMap<Ident, Label>,
+    label_count: Label,
 }
 
 impl CompileContext {
@@ -34,22 +34,14 @@ impl CompileContext {
         label
     }
 
-    pub fn global_decl(&mut self, v: &Ident, ty: &DType) {
-        let size = ty.size() as usize;
-        let bytes = size.max(WORD_SIZE); // always allocate at least one word;
-        let words = (bytes / WORD_SIZE) + if bytes % WORD_SIZE != 0 { 1 } else { 0 }; // How many words to allocate
-
+    pub fn global_decl(&mut self, v: &Ident, _ty: &DType) {
         self.globals.insert(v.clone(), self.global_offset as Word);
-        self.global_offset += words;
+        self.global_offset += 1;
     }
 
-    pub fn local_decl(&mut self, v: &Ident, ty: &DType) {
-        let size = ty.size() as usize;
-        let bytes = size.max(WORD_SIZE); // always allocate at least one word;
-        let words = (bytes / WORD_SIZE) + if bytes % WORD_SIZE != 0 { 1 } else { 0 }; // How many words to allocate
-
+    pub fn local_decl(&mut self, v: &Ident, _ty: &DType) {
         self.locals.insert(v.clone(), self.local_offset as Word);
-        self.local_offset += words;
+        self.local_offset += 1;
     }
 
     pub fn fn_label(&mut self, v: &Ident) -> Label {
@@ -61,8 +53,13 @@ impl CompileContext {
         let ret_label = self.label();
 
         use StackInst::*;
-        // Push stack pointer & return address
-        self.emit_stream(&[Push(ret_label), LclRead(self.local_offset)]);
+        // Push return address & stack pointer
+        self.emit_stream(&[
+            Push(ret_label),
+            LclRead(height),
+            Push(self.local_offset as u16 + height as u16 - 1),
+            Add, // stack pointer = previous stack pointer + stack frame size
+        ]);
 
         for arg in args {
             self.compile(arg);
@@ -87,7 +84,23 @@ impl CompileContext {
         use StackInst::*;
 
         if let Some(&addr) = self.globals.get(v) {
-            self.emit_stream(&[Push(addr), GblRead]);
+            let height = self.stack_height.unwrap();
+            // If in global scope
+            if self.ret_lbl == 0 {
+                self.emit_stream(&[
+                    Debug("Global access from global scope"),
+                    LclRead(height - addr as usize - 1),
+                ]);
+            } else {
+                self.emit_stream(&[
+                    LclRead(height - 1),
+                    Push(height as Word + 1),
+                    Add,
+                    Push(addr),
+                    Sub,
+                    StkRead,
+                ]);
+            }
             return;
         }
 
@@ -97,9 +110,7 @@ impl CompileContext {
         }
 
         if let Some(&addr) = self.locals.get(v) {
-            let Some(height) = self.stack_height else {
-                unreachable!()
-            };
+            let height = self.stack_height.unwrap();
             let offset = height - 1 - addr as usize;
             self.emit_stream(&[LclRead(offset)]);
             return;

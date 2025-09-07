@@ -48,6 +48,8 @@ pub enum StackInst {
     GblRead,
     LclStr(usize),  // Offset from top of stack
     LclRead(usize), // Offset from top of stack
+    StkRead,
+    StkStr,
 
     // Control Flow
     Label(Word),
@@ -56,7 +58,7 @@ pub enum StackInst {
     Exit,
 
     // IO
-    PrintChar,
+    PutChar,
 }
 
 impl StackInst {
@@ -96,22 +98,21 @@ impl StackInst {
             Push(_) => (0, Some(1)),
             Move(_) => (1, Some(0)),
             Copy => (1, Some(2)),
-
             Swap => (2, Some(2)),
             LNot | Not => (1, Some(1)),
             Add | Sub | Mul | Div | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr | LShift
             | RShift | And | Or | Xor => (2, Some(1)),
             Alloc(n) => (0, Some(n)),
             Dealloc(n) => (n, Some(0)),
-            GblStr => (2, Some(0)),
-            GblRead => (1, Some(1)),
+            GblStr | StkStr => (2, Some(0)),
+            GblRead | StkRead => (1, Some(1)),
             LclStr(_) => (1, Some(0)),
             LclRead(_) => (0, Some(1)),
             Label(_) => (0, None),
             Branch(_, _) => (1, Some(0)),
             Goto => (1, Some(0)),
             Exit => (0, None),
-            PrintChar => (1, Some(0)),
+            PutChar => (1, Some(0)),
         }
     }
 }
@@ -137,13 +138,15 @@ impl std::fmt::Debug for StackInst {
             Dealloc(n) => write!(f, "Dealloc({})", n),
             GblStr => write!(f, "GblStrB"),
             GblRead => write!(f, "GblReadB"),
+            StkStr => write!(f, "StkStr"),
+            StkRead => write!(f, "StkRead"),
             LclStr(d) => write!(f, "LclStrB({})", d),
             LclRead(d) => write!(f, "LclReadB({})", d),
             Label(l) => write!(f, "Label({})", l),
             Branch(t, e) => write!(f, "Branch({}, {})", t, e),
             Goto => write!(f, "Goto"),
             Exit => write!(f, "Exit"),
-            PrintChar => write!(f, "PrintChar"),
+            PutChar => write!(f, "PrintChar"),
             Eq => write!(f, "Eq"),
             Neq => write!(f, "Neq"),
             Lt => write!(f, "Lt"),

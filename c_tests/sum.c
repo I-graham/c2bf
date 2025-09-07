@@ -3,21 +3,22 @@ int b = 2;
 int c = a + b;
 
 int f(int x, int y) {
-  int z = x + y + 10;
+  int z = x + y + 16;
   return z;
 }
 
 int main() {
-  int d = f(b, c) + 6 << 2;
+  int d = f(b, c) + 6 << 1;
+  putchar(d);
   if (d <= 20) {
-    print(0);
+    putchar('0');
   }
 
   if (d >= 20) {
-    print(1);
+    putchar('1');
   } else {
-    print(2);
+    putchar('2');
   }
-  print(d);
+  putchar(d);
   return 0;
 }
