@@ -43,7 +43,7 @@ impl StackMachine {
                     println!("Stack @ {}: {:?}", l, self.stack);
                 }
                 Nop | Label(_) | Comment(_) => (),
-                PushB(b) => self.stack.push(b),
+                Push(b) => self.stack.push(b),
                 PrintChar => {
                     println!("{}", self.stack.pop().unwrap());
                 }
@@ -61,19 +61,19 @@ impl StackMachine {
                     let word = *self.stack.last().unwrap();
                     self.stack[n - d] = word;
                 }
-                SwapB => {
+                Swap => {
                     let a = self.stack.pop().unwrap();
                     let b = self.stack.pop().unwrap();
 
                     self.stack.push(a);
                     self.stack.push(b);
                 }
-                CopyB => {
+                Copy => {
                     let top = *self.stack.last().unwrap();
                     self.stack.push(top);
                 }
 
-                GblReadB => {
+                GblRead => {
                     let addr = self.stack.pop().unwrap();
                     let value = self
                         .stack
@@ -81,7 +81,7 @@ impl StackMachine {
                         .expect("Global address does not exist.");
                     self.stack.push(*value)
                 }
-                GblStrB => {
+                GblStr => {
                     let addr = self.stack.pop().unwrap();
                     let word = self.stack.pop().unwrap();
 
@@ -90,13 +90,13 @@ impl StackMachine {
                         .get_mut(addr as usize)
                         .expect("Global address does not exist.") = word;
                 }
-                LclReadB(addr) => {
+                LclRead(addr) => {
                     let addr = self.stack.len() - 1 - addr;
                     let value = *self.stack.get(addr).expect("Address does not exist");
 
                     self.stack.push(value);
                 }
-                LclStrB(addr) => {
+                LclStr(addr) => {
                     let word = self.stack.pop().unwrap();
                     let addr = self.stack.len() - addr;
 
@@ -114,14 +114,14 @@ impl StackMachine {
                     continue;
                 }
 
-                o @ (AddB | SubB | MulB | DivB | LShift | RShift | And | Or | Xor) => {
+                o @ (Add | Sub | Mul | Div | LShift | RShift | And | Or | Xor) => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     let out = match o {
-                        AddB => a + b,
-                        SubB => a - b,
-                        MulB => a * b,
-                        DivB => a / b,
+                        Add => a + b,
+                        Sub => a - b,
+                        Mul => a * b,
+                        Div => a / b,
                         LShift => a << b,
                         RShift => a >> b,
                         And => a & b,

@@ -62,7 +62,7 @@ impl CompileContext {
 
         use StackInst::*;
         // Push stack pointer & return address
-        self.emit_stream(&[PushB(ret_label), LclReadB(self.local_offset)]);
+        self.emit_stream(&[Push(ret_label), LclRead(self.local_offset)]);
 
         for arg in args {
             self.compile(arg);
@@ -76,7 +76,7 @@ impl CompileContext {
     pub fn push_addr(&mut self, v: &Ident) {
         use StackInst::*;
         if let Some(&addr) = self.globals.get(v) {
-            self.stream.push(PushB(addr));
+            self.stream.push(Push(addr));
             return;
         }
 
@@ -87,12 +87,12 @@ impl CompileContext {
         use StackInst::*;
 
         if let Some(&addr) = self.globals.get(v) {
-            self.emit_stream(&[PushB(addr), GblReadB]);
+            self.emit_stream(&[Push(addr), GblRead]);
             return;
         }
 
         if let Some(&addr) = self.funcs.get(v) {
-            self.emit(PushB(addr));
+            self.emit(Push(addr));
             return;
         }
 
@@ -101,7 +101,7 @@ impl CompileContext {
                 unreachable!()
             };
             let offset = height - 1 - addr as usize;
-            self.emit_stream(&[LclReadB(offset)]);
+            self.emit_stream(&[LclRead(offset)]);
             return;
         }
 
@@ -116,12 +116,12 @@ impl CompileContext {
                 unreachable!()
             };
             let offset = height - 1 - addr as usize;
-            self.emit(LclStrB(offset));
+            self.emit(LclStr(offset));
             return;
         }
 
         if let Some(&addr) = self.globals.get(v) {
-            self.emit_stream(&[PushB(addr), GblStrB]);
+            self.emit_stream(&[Push(addr), GblStr]);
             return;
         }
 
@@ -169,13 +169,13 @@ impl CompileContext {
             self.stack_height = None; // Ignore stack height from this point on.
                                       // Return to caller, which should have pushed a return label
             self.emit_stream(&[
-                PushB(0),
-                PushB(self.ret_lbl),
+                Push(0),
+                Push(self.ret_lbl),
                 Goto,
                 Label(self.ret_lbl),
                 Move(frame_size),
                 Dealloc(frame_size),
-                SwapB,
+                Swap,
                 Goto,
             ]);
         }

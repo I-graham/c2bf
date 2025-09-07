@@ -75,7 +75,7 @@ impl ASTNode for Program {
             ctxt.emit(Comment(v.clone().leak()));
             ctxt.compile(&def);
             ctxt.push_addr(v);
-            ctxt.emit(GblStrB);
+            ctxt.emit(GblStr);
         }
 
         // Call main()

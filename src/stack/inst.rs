@@ -9,16 +9,16 @@ pub enum StackInst {
     Debug(&'static str),
 
     // Stack Manipulation
-    PushB(Word),
+    Push(Word),
     Move(usize), // Copy word into stack
-    SwapB,
-    CopyB,
+    Swap,
+    Copy,
 
     // Arithmetic
-    AddB,
-    SubB,
-    MulB,
-    DivB,
+    Add,
+    Sub,
+    Mul,
+    Div,
 
     // Bitwise Ops
     LShift,
@@ -44,10 +44,10 @@ pub enum StackInst {
     // Memory
     Alloc(usize), // No runtime allocations yet
     Dealloc(usize),
-    GblStrB,
-    GblReadB,
-    LclStrB(usize),  // Offset from top of stack
-    LclReadB(usize), // Offset from top of stack
+    GblStr,
+    GblRead,
+    LclStr(usize),  // Offset from top of stack
+    LclRead(usize), // Offset from top of stack
 
     // Control Flow
     Label(Word),
@@ -68,11 +68,11 @@ impl StackInst {
 
         while let Some(inst) = stream.pop() {
             let expansion: &[_] = match inst {
-                Move(d) => &[CopyB, LclStrB(d + 1)],
-                Exit => &[PushB(0), Goto],
+                Move(d) => &[Copy, LclStr(d + 1)],
+                Exit => &[Push(0), Goto],
                 Eq => &[Neq, LNot],
                 // All comparisons are in terms of GrEq
-                LtEq => &[SwapB, GrEq],
+                LtEq => &[Swap, GrEq],
                 Lt => &[GrEq, LNot],
                 Gr => &[LtEq, LNot],
                 _ => {
@@ -93,20 +93,20 @@ impl StackInst {
         use StackInst::*;
         match self {
             Comment(_) | Debug(_) | Nop => (0, Some(0)),
-            PushB(_) => (0, Some(1)),
+            Push(_) => (0, Some(1)),
             Move(_) => (1, Some(0)),
-            CopyB => (1, Some(2)),
+            Copy => (1, Some(2)),
 
-            SwapB => (2, Some(2)),
+            Swap => (2, Some(2)),
             LNot | Not => (1, Some(1)),
-            AddB | SubB | MulB | DivB | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr | LShift
+            Add | Sub | Mul | Div | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr | LShift
             | RShift | And | Or | Xor => (2, Some(1)),
             Alloc(n) => (0, Some(n)),
             Dealloc(n) => (n, Some(0)),
-            GblStrB => (2, Some(0)),
-            GblReadB => (1, Some(1)),
-            LclStrB(_) => (1, Some(0)),
-            LclReadB(_) => (0, Some(1)),
+            GblStr => (2, Some(0)),
+            GblRead => (1, Some(1)),
+            LclStr(_) => (1, Some(0)),
+            LclRead(_) => (0, Some(1)),
             Label(_) => (0, None),
             Branch(_, _) => (1, Some(0)),
             Goto => (1, Some(0)),
@@ -123,22 +123,22 @@ impl std::fmt::Debug for StackInst {
             Nop => write!(f, "Nop"),
             Debug(l) => write!(f, "Debug({})", l),
             Comment(c) => write!(f, "/* {} */", c),
-            PushB(c) => write!(f, "PushB({})", c),
+            Push(c) => write!(f, "PushB({})", c),
             Move(d) => write!(f, "Move({})", d),
-            SwapB => write!(f, "SwapB"),
-            CopyB => write!(f, "CopyB"),
-            AddB => write!(f, "AddB"),
-            SubB => write!(f, "SubB"),
-            MulB => write!(f, "MulB"),
-            DivB => write!(f, "DivB"),
+            Swap => write!(f, "SwapB"),
+            Copy => write!(f, "CopyB"),
+            Add => write!(f, "AddB"),
+            Sub => write!(f, "SubB"),
+            Mul => write!(f, "MulB"),
+            Div => write!(f, "DivB"),
             LShift => write!(f, "LShift"),
             RShift => write!(f, "RShift"),
             Alloc(n) => write!(f, "Alloc({})", n),
             Dealloc(n) => write!(f, "Dealloc({})", n),
-            GblStrB => write!(f, "GblStrB"),
-            GblReadB => write!(f, "GblReadB"),
-            LclStrB(d) => write!(f, "LclStrB({})", d),
-            LclReadB(d) => write!(f, "LclReadB({})", d),
+            GblStr => write!(f, "GblStrB"),
+            GblRead => write!(f, "GblReadB"),
+            LclStr(d) => write!(f, "LclStrB({})", d),
+            LclRead(d) => write!(f, "LclReadB({})", d),
             Label(l) => write!(f, "Label({})", l),
             Branch(t, e) => write!(f, "Branch({}, {})", t, e),
             Goto => write!(f, "Goto"),

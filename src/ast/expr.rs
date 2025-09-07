@@ -124,7 +124,7 @@ impl ASTNode for Expr {
         use Expr::*;
         use StackInst::*;
         match self {
-            Const(v) => ctxt.emit(PushB(*v as Word)),
+            Const(v) => ctxt.emit(Push(*v as Word)),
             Var(v) => ctxt.push_var(v),
             Unary(op, e) => {
                 ctxt.compile(e);
@@ -140,16 +140,16 @@ impl ASTNode for Expr {
                 };
                 ctxt.emit(op);
             }
-            TypeSize(ty) => ctxt.emit(PushB(ty.size())),
+            TypeSize(ty) => ctxt.emit(Push(ty.size())),
             BinOpExpr(head, args) => {
                 ctxt.compile(head);
 
                 for (op, arg) in args {
                     let op = match op {
-                        BinOp::Add => AddB,
-                        BinOp::Sub => SubB,
-                        BinOp::Mul => MulB,
-                        BinOp::Div => DivB,
+                        BinOp::Add => Add,
+                        BinOp::Sub => Sub,
+                        BinOp::Mul => Mul,
+                        BinOp::Div => Div,
                         BinOp::Eq => Eq,
                         BinOp::Neq => Neq,
                         BinOp::Lt => Lt,
@@ -186,7 +186,7 @@ impl ASTNode for Expr {
             Assign(var, BinOp::Set, val) => {
                 let Expr::Var(v) = &**var else { todo!() };
                 ctxt.compile(val);
-                ctxt.emit(CopyB);
+                ctxt.emit(Copy);
                 ctxt.store(v);
             }
 

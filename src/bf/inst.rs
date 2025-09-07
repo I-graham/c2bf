@@ -84,11 +84,11 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
         bf.push(Dbg(format!("{:?}", inst).leak()));
 
         match inst {
-            PushB(b) => {
+            Push(b) => {
                 bf.push(Right);
                 bf.extend(repeat_n(Inc, b as _));
             }
-            SwapB => bf.extend(BFInst::parse(
+            Swap => bf.extend(BFInst::parse(
                 "
                 <[->>+<<] // Move 1 into 3
                 >[-<+>]   // Shift 2 into 1
@@ -97,8 +97,8 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 ",
             )),
 
-            CopyB => bf.extend(BFInst::parse("[->+>+<<]>>[-<<+>>]<")),
-            MulB => bf.extend(BFInst::parse(
+            Copy => bf.extend(BFInst::parse("[->+>+<<]>>[-<<+>>]<")),
+            Mul => bf.extend(BFInst::parse(
                 "
                 <[->>+<<]        // Make room for return value
                 >[-              // repeat x times
@@ -110,15 +110,15 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >[-]<<           // clear y & point at x
                 ",
             )),
-            AddB => bf.extend(BFInst::parse("[-<+>]<")),
-            SubB => bf.extend(BFInst::parse("[-<->]<")),
+            Add => bf.extend(BFInst::parse("[-<+>]<")),
+            Sub => bf.extend(BFInst::parse("[-<->]<")),
             Alloc(n) => bf.extend(repeat_n(Right, n as _)),
             Dealloc(n) => {
                 for _ in 0..n {
                     bf.extend(BFInst::parse("[-]<"));
                 }
             }
-            LclReadB(n) => {
+            LclRead(n) => {
                 let left = repeat_n(Left, n).collect::<Vec<_>>();
                 let right = repeat_n(Right, n).collect::<Vec<_>>();
                 bf.extend(&left);
@@ -134,7 +134,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 bf.extend(&right);
                 bf.extend(BFInst::parse(">>]<"))
             }
-            LclStrB(n) => {
+            LclStr(n) => {
                 let left = repeat_n(Left, n).collect::<Vec<_>>();
                 let right = repeat_n(Right, n).collect::<Vec<_>>();
                 bf.extend(&left);
