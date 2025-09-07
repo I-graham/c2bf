@@ -120,7 +120,7 @@ impl ASTNode for Stmt {
             }
             ExprStmt(Some(expr)) => {
                 ctxt.compile(expr);
-                ctxt.emit(DiscardB);
+                ctxt.emit(Dealloc(1));
             }
             ExprStmt(None) => {}
             SeqStmt(stmts) => {

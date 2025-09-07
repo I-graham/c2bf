@@ -166,7 +166,8 @@ impl CompileContext {
         if r == &DType::Void {
             self.emit_stream(&[Dealloc(frame_size), Goto]);
         } else {
-            // Return to caller, which should have pushed a return label
+            self.stack_height = None; // Ignore stack height from this point on.
+                                      // Return to caller, which should have pushed a return label
             self.emit_stream(&[
                 PushB(0),
                 PushB(self.ret_lbl),

@@ -178,7 +178,7 @@ impl ASTNode for Expr {
                 ctxt.compile(seqs.next().unwrap());
 
                 for seq in seqs {
-                    ctxt.emit(DiscardB);
+                    ctxt.emit(Dealloc(1));
                     ctxt.compile(seq);
                 }
             }

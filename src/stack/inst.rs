@@ -10,7 +10,6 @@ pub enum StackInst {
 
     // Stack Manipulation
     PushB(Word),
-    DiscardB,
     Move(usize), // Copy word into stack
     SwapB,
     CopyB,
@@ -68,21 +67,22 @@ impl StackInst {
         stream.reverse();
 
         while let Some(inst) = stream.pop() {
-            let mut expansion = match inst {
-                Move(d) => [CopyB, LclStrB(d + 1)],
-                Exit => [PushB(0), Goto],
-                Eq => [Neq, LNot],
+            let expansion: &[_] = match inst {
+                Move(d) => &[CopyB, LclStrB(d + 1)],
+                Exit => &[PushB(0), Goto],
+                Eq => &[Neq, LNot],
                 // All comparisons are in terms of GrEq
-                LtEq => [SwapB, GrEq],
-                Lt => [GrEq, LNot],
-                Gr => [LtEq, LNot],
+                LtEq => &[SwapB, GrEq],
+                Lt => &[GrEq, LNot],
+                Gr => &[LtEq, LNot],
                 _ => {
                     out.push(inst);
                     continue;
                 }
             };
-            expansion.reverse();
-            stream.extend(expansion);
+            for &inst in expansion.iter().rev() {
+                stream.push(inst);
+            }
         }
 
         *stream = out;
@@ -94,7 +94,6 @@ impl StackInst {
         match self {
             Comment(_) | Debug(_) | Nop => (0, Some(0)),
             PushB(_) => (0, Some(1)),
-            DiscardB => (1, Some(0)),
             Move(_) => (1, Some(0)),
             CopyB => (1, Some(2)),
 
@@ -102,8 +101,8 @@ impl StackInst {
             LNot | Not => (1, Some(1)),
             AddB | SubB | MulB | DivB | Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr | LShift
             | RShift | And | Or | Xor => (2, Some(1)),
-            Alloc(_) => (0, None),
-            Dealloc(_) => (0, None),
+            Alloc(n) => (0, Some(n)),
+            Dealloc(n) => (n, Some(0)),
             GblStrB => (2, Some(0)),
             GblReadB => (1, Some(1)),
             LclStrB(_) => (1, Some(0)),
@@ -125,7 +124,6 @@ impl std::fmt::Debug for StackInst {
             Debug(l) => write!(f, "Debug({})", l),
             Comment(c) => write!(f, "/* {} */", c),
             PushB(c) => write!(f, "PushB({})", c),
-            DiscardB => write!(f, "DiscardB"),
             Move(d) => write!(f, "Move({})", d),
             SwapB => write!(f, "SwapB"),
             CopyB => write!(f, "CopyB"),

@@ -44,9 +44,6 @@ impl StackMachine {
                 }
                 Nop | Label(_) | Comment(_) => (),
                 PushB(b) => self.stack.push(b),
-                DiscardB => {
-                    self.stack.pop();
-                }
                 PrintChar => {
                     println!("{}", self.stack.pop().unwrap());
                 }

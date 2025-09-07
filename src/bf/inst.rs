@@ -88,9 +88,6 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 bf.push(Right);
                 bf.extend(repeat_n(Inc, b as _));
             }
-            DiscardB => {
-                bf.extend(BFInst::parse("[-]<"));
-            }
             SwapB => bf.extend(BFInst::parse(
                 "
                 <[->>+<<] // Move 1 into 3
