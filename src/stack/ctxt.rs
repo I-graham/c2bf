@@ -57,7 +57,7 @@ impl CompileContext {
         self.emit_stream(&[
             Push(ret_label),
             LclRead(height),
-            Push(self.local_offset as u16 + height as u16 + 2 - 1),
+            Push(self.local_offset as u16 + height as u16),
             Add, // stack pointer = previous stack pointer + stack frame size
         ]);
 
