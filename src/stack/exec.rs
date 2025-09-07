@@ -103,7 +103,6 @@ impl StackMachine {
                     *self.stack.get_mut(addr).expect("Address does not exist") = word;
                 }
                 StkRead => {
-                    dbg!(&self.stack);
                     let addr = self.stack.pop().unwrap();
                     let word = *self
                         .stack

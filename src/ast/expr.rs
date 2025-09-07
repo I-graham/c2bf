@@ -190,6 +190,19 @@ impl ASTNode for Expr {
                 ctxt.store(v);
             }
 
+            Inc(e) => {
+                let Expr::Var(v) = &**e else { todo!() };
+                ctxt.push_var(v);
+                ctxt.emit_stream(&[Copy, Push(1), Add]);
+                ctxt.store(v);
+            }
+            Dec(e) => {
+                let Expr::Var(v) = &**e else { todo!() };
+                ctxt.push_var(v);
+                ctxt.emit_stream(&[Copy, Push(1), Sub]);
+                ctxt.store(v);
+            }
+
             e => todo!("Unsupported expr {:?}", e),
         };
     }

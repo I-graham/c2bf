@@ -123,16 +123,22 @@ impl CompileContext {
         use StackInst::*;
 
         if let Some(&addr) = self.locals.get(v) {
-            let Some(height) = self.stack_height else {
-                unreachable!()
-            };
+            let height = self.stack_height.unwrap();
             let offset = height - 1 - addr as usize;
             self.emit(LclStr(offset));
             return;
         }
 
         if let Some(&addr) = self.globals.get(v) {
-            self.emit_stream(&[Push(addr), GblStr]);
+            let height = self.stack_height.unwrap();
+            self.emit_stream(&[
+                LclRead(height - 1),
+                Push(height as Word),
+                Add,
+                Push(addr),
+                Sub,
+                StkStr,
+            ]);
             return;
         }
 

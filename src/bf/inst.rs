@@ -276,13 +276,19 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
 
             StkStr => {
                 // Prepare state
-                bf.extend(BFInst::parse("[->+>+<<]>>>"));
+                bf.extend(BFInst::parse("-[->+>+<<]>>[-<<+>>]"));
 
+                // Taken from the sample place
                 bf.extend(BFInst::parse(
                     "
-                        
+                    <[<<<[->>>>+<<<<]>[-<+>]>[-<+>]>[-<+>]<-]
+                    <<<[-]>[-<+>]>
+                    [[->+<]>>>[-<<<<+>>>>]<<-]>>
                     ",
                 ));
+
+                // Move stack head back
+                bf.extend(BFInst::parse("<<<<"));
             }
 
             Branch(t, f) => {
