@@ -9,7 +9,7 @@ pub enum Expr {
     TypeSize(DType),
     Cast(DType, Box<Expr>),
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),
-    Assign(Box<Expr>, BinOp, Box<Expr>),
+    Assign(Box<Expr>, AssignOp, Box<Expr>),
     Seq(Vec<Expr>),
     InitList(Vec<Expr>),
     Indexed(Box<Expr>, Box<Expr>),
@@ -167,7 +167,7 @@ impl ASTNode for Expr {
                 let height = ctxt.stack_height.unwrap();
                 ctxt.emit_stream(&[
                     LclRead(height - 1),
-                    Push(height as Word - 1),
+                    Push(height as Word),
                     Add,
                     Swap,
                     Sub,
@@ -278,13 +278,57 @@ impl ASTNode for Expr {
                 }
             }
 
-            Assign(var, BinOp::Set, val) => {
+            Assign(var, AssignOp::Assign, val) => {
                 ctxt.compile(val);
                 ctxt.emit(Copy);
                 if let Expr::Var(v) = &**var {
                     ctxt.store(v);
                 } else {
                     var.compile_addr(ctxt);
+                    let height = ctxt.stack_height.unwrap();
+                    ctxt.emit_stream(&[
+                        LclRead(height - 1),
+                        Push(height as Word - 2),
+                        Add,
+                        Swap,
+                        Sub,
+                        StkStr,
+                    ]);
+                }
+            }
+
+            Assign(var, op, val) => {
+                let op = match op {
+                    AssignOp::MulAssign => Mul,
+                    AssignOp::DivAssign => Div,
+                    AssignOp::PlusAssign => Add,
+                    AssignOp::SubAssign => Sub,
+                    AssignOp::LShiftAssign => LShift,
+                    AssignOp::RShiftAssign => RShift,
+                    AssignOp::AndAssign => And,
+                    AssignOp::OrAssign => Or,
+                    AssignOp::XorAssign => Xor,
+                    _ => unreachable!(),
+                };
+
+                var.compile_addr(ctxt);
+                ctxt.emit(Copy);
+                let height = ctxt.stack_height.unwrap();
+                ctxt.emit_stream(&[
+                    LclRead(height - 1),
+                    Push(height as Word - 1),
+                    Add,
+                    Swap,
+                    Sub,
+                    StkRead,
+                ]);
+
+                ctxt.compile(val);
+                ctxt.emit_stream(&[op, Swap, LclRead(1), Swap]);
+
+                if let Expr::Var(v) = &**var {
+                    ctxt.store(v);
+                } else {
                     let height = ctxt.stack_height.unwrap();
                     ctxt.emit_stream(&[
                         LclRead(height - 1),

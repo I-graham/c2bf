@@ -2,7 +2,6 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub enum BinOp {
-    Set,
     Add,
     Sub,
     Mul,
@@ -27,7 +26,6 @@ impl ASTNode for BinOp {
     fn parse(pair: Pair<Rule>) -> Self {
         use BinOp::*;
         match pair.as_str() {
-            "=" => Set,
             "+" => Add,
             "-" => Sub,
             "*" => Mul,
@@ -75,6 +73,41 @@ impl ASTNode for MonOp {
             "-" => Negate,
             "~" => BinaryNot,
             "&" => AddrOf,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum AssignOp {
+    Assign,
+    MulAssign,
+    DivAssign,
+    ModAssign,
+    PlusAssign,
+    SubAssign,
+    LShiftAssign,
+    RShiftAssign,
+    AndAssign,
+    OrAssign,
+    XorAssign,
+}
+
+impl ASTNode for AssignOp {
+    fn parse(pair: Pair<Rule>) -> Self {
+        use AssignOp::*;
+        match pair.as_str() {
+            "=" => Assign,
+            "*=" => MulAssign,
+            "/=" => DivAssign,
+            "%=" => ModAssign,
+            "+=" => PlusAssign,
+            "-=" => SubAssign,
+            "<<=" => LShiftAssign,
+            ">>=" => RShiftAssign,
+            "&=" => AndAssign,
+            "|=" => OrAssign,
+            "^=" => XorAssign,
             _ => unreachable!(),
         }
     }
