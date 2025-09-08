@@ -27,9 +27,8 @@ impl ASTNode for DType {
 
             type_name
                 [sql] -> sql;
-                [sql, decl:DType] -> {
-                    decl.change_base(sql);
-                    decl
+                [sql, decl:Declarator] -> {
+                    decl.set_type(sql)
                 };
 
             specifier_qualifier_list
@@ -42,6 +41,7 @@ impl ASTNode for DType {
 
                     for spec in specs {
                         match spec.as_str() {
+                            "void" => ty = Void,
                             "unsigned" => signed = false,
                             "signed" => signed = true,
                             "char" => ty = S8,
@@ -88,14 +88,6 @@ impl DType {
         }
     }
 
-    pub fn change_base(&mut self, base: Self) {
-        use DType::*;
-        match self {
-            Array(_, b) | Pointer(_, b) | Unsized(b) | Function(_, b) => b.change_base(base),
-            _ => *self = base,
-        }
-    }
-
     pub fn size(&self) -> Word {
         use DType::*;
         match self {
@@ -106,7 +98,7 @@ impl DType {
             U64 | S64 => 8,
             Float => 4,
             Double => 8,
-            Pointer(_, _) | Unsized(_) => 4,
+            Pointer(_, _) | Unsized(_) => 1,
             Array(n, dtype) => n * dtype.size(),
             Function(_, _) => unreachable!(),
         }

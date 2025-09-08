@@ -304,10 +304,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 bf.extend(BFInst::parse(">]"));
             }
             Goto => bf.extend(BFInst::parse(">]")),
-            PutChar => {
-                bf.push(Dbg("!!!"));
-                bf.extend(BFInst::parse(".[-]<"))
-            }
+            PutChar => bf.extend(BFInst::parse(".[-]<")),
             Label(0) | Nop | Debug(_) | Comment(_) => {}
             i => todo!("{:?}", i),
         }

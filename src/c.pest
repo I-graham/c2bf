@@ -284,7 +284,7 @@ labeled_stmt =
 case_stmt    = { "case" ~ ":" ~ const_expr ~ ":" ~ stmt }
 default_stmt = { "default" ~ ":" ~ stmt }
 
-compound_stmt = { "{" ~ (stmt | declaration)* ~ "}" }
+compound_stmt = { "{" ~ (declaration | stmt)* ~ "}" }
 
 expr_stmt = { expr? ~ ";" }
 

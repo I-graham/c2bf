@@ -133,7 +133,7 @@ impl ASTNode for Expr {
                     ctxt.push_addr(v);
                     return;
                 }
-                ctxt.push_var(v)
+                ctxt.push_var(v);
             }
             Unary(MonOp::LogicalNot, e) => {
                 ctxt.compile(e);
@@ -158,6 +158,21 @@ impl ASTNode for Expr {
                 ctxt.push_var(v);
                 ctxt.emit_stream(&[Push(1), Sub, Copy]);
                 ctxt.store(v);
+            }
+            Unary(MonOp::AddrOf, e) => {
+                e.compile_addr(ctxt);
+            }
+            Unary(MonOp::Deref, e) => {
+                ctxt.compile(e);
+                let height = ctxt.stack_height.unwrap();
+                ctxt.emit_stream(&[
+                    LclRead(height - 1),
+                    Push(height as Word),
+                    Add,
+                    Swap,
+                    Sub,
+                    StkRead,
+                ]);
             }
             Cond(c, t, f) => {
                 let height = ctxt.stack_height.unwrap();
@@ -273,7 +288,7 @@ impl ASTNode for Expr {
                     let height = ctxt.stack_height.unwrap();
                     ctxt.emit_stream(&[
                         LclRead(height - 1),
-                        Push(height as Word - 1),
+                        Push(height as Word - 2),
                         Add,
                         Swap,
                         Sub,
@@ -299,9 +314,8 @@ impl ASTNode for Expr {
                 self.compile_addr(ctxt);
                 let height = ctxt.stack_height.unwrap();
                 ctxt.emit_stream(&[
-                    Debug("??"),
                     LclRead(height - 1),
-                    Push(height as Word),
+                    Push(height as Word - 1),
                     Add,
                     Swap,
                     Sub,
@@ -358,6 +372,7 @@ impl Expr {
         use Expr::*;
         use StackInst::*;
         match self {
+            Var(v) => ctxt.push_addr(v),
             Unary(MonOp::Deref, e) => ctxt.compile(e),
             Seq(es) => {
                 let n = es.len();

@@ -61,7 +61,7 @@ impl CompileContext {
         self.emit_stream(&[
             Push(ret_label),
             LclRead(height),
-            Push(self.local_offset as u16 + height as u16),
+            Push(self.local_offset as u16 + height as u16 - 1),
             Add, // stack pointer = previous stack pointer + stack frame size
         ]);
 
@@ -84,13 +84,7 @@ impl CompileContext {
 
         if let Some((addr, _)) = self.locals.get(v) {
             let height = self.stack_height.unwrap();
-            self.emit_stream(&[
-                LclRead(height - 1),
-                Push(height as Word + 1),
-                Add,
-                Push(*addr),
-                Sub,
-            ]);
+            self.emit_stream(&[LclRead(height - 1), Push(*addr), Add]);
             return;
         }
 
@@ -111,7 +105,7 @@ impl CompileContext {
             } else {
                 self.emit_stream(&[
                     LclRead(height - 1),
-                    Push(height as Word + 1),
+                    Push(height as Word),
                     Add,
                     Push(*addr),
                     Sub,
@@ -150,7 +144,7 @@ impl CompileContext {
             let height = self.stack_height.unwrap();
             self.emit_stream(&[
                 LclRead(height - 1),
-                Push(height as Word),
+                Push(height as Word - 1),
                 Add,
                 Push(*addr),
                 Sub,
@@ -214,7 +208,8 @@ impl CompileContext {
         self.compile(body);
 
         if r == &DType::Void {
-            self.emit_stream(&[Dealloc(frame_size), Goto]);
+            self.stack_height = None;
+            self.emit_stream(&[Label(self.ret_lbl), Dealloc(frame_size), Goto]);
         } else {
             self.stack_height = None; // Ignore stack height from this point on.
                                       // Return to caller, which should have pushed a return label

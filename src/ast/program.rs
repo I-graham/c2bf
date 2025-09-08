@@ -96,7 +96,7 @@ impl ASTNode for Program {
         ctxt.emit_stream(&[
             Debug("Start main call"),
             Push(ret_lbl),
-            Push(ctxt.global_offset as _),
+            Push(ctxt.global_offset as Word + 1),
             Push(main_lbl as _),
             Goto,
             Label(ret_lbl),
