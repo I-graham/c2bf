@@ -47,7 +47,10 @@ impl ASTNode for Expr {
                         let boxed = Box::new(base);
 
                         base = match fixture.as_rule() {
-                            index => Indexed(boxed, Self::parse(fixture).into()),
+                            index => {
+                                let id = fixture.into_inner().next().unwrap();
+                                Indexed(boxed, Self::parse(id).into())
+                            }
                             field => Field(boxed, fixture.as_str().into()),
                             arrow => Arrow(boxed, fixture.as_str().into()),
                             inc => Inc(boxed),
@@ -125,24 +128,103 @@ impl ASTNode for Expr {
         use StackInst::*;
         match self {
             Const(v) => ctxt.emit(Push(*v as Word)),
-            Var(v) => ctxt.push_var(v),
-            Unary(op, e) => {
+            Var(v) => {
+                if let DType::Array(_, _) = ctxt.vty(v) {
+                    ctxt.push_addr(v);
+                    return;
+                }
+                ctxt.push_var(v)
+            }
+            Unary(MonOp::LogicalNot, e) => {
                 ctxt.compile(e);
-                let op = match op {
-                    MonOp::LogicalNot => LNot,
-                    MonOp::BinaryNot => Not,
-                    MonOp::Inc => todo!(),
-                    MonOp::Dec => todo!(),
-                    MonOp::SizeOf => todo!(),
-                    MonOp::Deref => todo!(),
-                    MonOp::Negate => todo!(),
-                    MonOp::AddrOf => todo!(),
-                };
-                ctxt.emit(op);
+                ctxt.emit(LNot);
+            }
+            Unary(MonOp::BinaryNot, e) => {
+                ctxt.compile(e);
+                ctxt.emit(Not);
+            }
+            Unary(MonOp::Negate, e) => {
+                ctxt.compile(e);
+                ctxt.emit(Negate);
+            }
+            Unary(MonOp::Inc, e) => {
+                let Expr::Var(v) = &**e else { todo!() };
+                ctxt.push_var(v);
+                ctxt.emit_stream(&[Push(1), Add, Copy]);
+                ctxt.store(v);
+            }
+            Unary(MonOp::Dec, e) => {
+                let Expr::Var(v) = &**e else { todo!() };
+                ctxt.push_var(v);
+                ctxt.emit_stream(&[Push(1), Sub, Copy]);
+                ctxt.store(v);
+            }
+            Cond(c, t, f) => {
+                let height = ctxt.stack_height.unwrap();
+                let t_lbl = ctxt.label();
+                let f_lbl = ctxt.label();
+                let leave = ctxt.label();
+                ctxt.compile(c);
+                ctxt.emit_stream(&[Branch(t_lbl, f_lbl), Label(t_lbl)]);
+                ctxt.stack_height = Some(height);
+                ctxt.compile(t);
+                ctxt.emit_stream(&[Push(leave), Goto, Label(f_lbl)]);
+                ctxt.stack_height = Some(height);
+                ctxt.compile(f);
+                ctxt.emit_stream(&[Push(leave), Goto, Label(leave)]);
+                ctxt.stack_height = Some(height + 1);
             }
             TypeSize(ty) => ctxt.emit(Push(ty.size())),
             BinOpExpr(head, args) => {
                 ctxt.compile(head);
+
+                // Short-circuiting And
+                if let Some((BinOp::LAnd, _)) = args.first() {
+                    let last = ctxt.label();
+                    let fail = ctxt.label();
+
+                    for (_, arg) in args {
+                        let cont = ctxt.label();
+                        ctxt.emit_stream(&[Branch(cont, fail), Label(cont)]);
+                        ctxt.compile(arg);
+                    }
+
+                    ctxt.emit_stream(&[
+                        Push(last),
+                        Goto,
+                        Label(fail),
+                        Push(0),
+                        Push(last),
+                        Goto,
+                        Label(last),
+                    ]);
+
+                    return;
+                }
+
+                // Short-circuiting Or
+                if let Some((BinOp::LOr, _)) = args.first() {
+                    let succ = ctxt.label();
+                    let last = ctxt.label();
+
+                    for (_, arg) in args {
+                        let cont = ctxt.label();
+                        ctxt.emit_stream(&[Branch(succ, cont), Label(cont)]);
+                        ctxt.compile(arg);
+                    }
+
+                    ctxt.emit_stream(&[
+                        Push(last),
+                        Goto,
+                        Label(succ),
+                        Push(1),
+                        Push(last),
+                        Goto,
+                        Label(last),
+                    ]);
+
+                    return;
+                }
 
                 for (op, arg) in args {
                     let op = match op {
@@ -156,14 +238,12 @@ impl ASTNode for Expr {
                         BinOp::LtEq => LtEq,
                         BinOp::Gr => Gr,
                         BinOp::GrEq => GrEq,
-                        BinOp::LAnd => LAnd,
-                        BinOp::LOr => LOr,
                         BinOp::LShift => LShift,
                         BinOp::RShift => RShift,
                         BinOp::And => And,
                         BinOp::Or => Or,
                         BinOp::Xor => Xor,
-                        _ => todo!(),
+                        _ => unreachable!(),
                     };
 
                     ctxt.compile(arg);
@@ -184,10 +264,22 @@ impl ASTNode for Expr {
             }
 
             Assign(var, BinOp::Set, val) => {
-                let Expr::Var(v) = &**var else { todo!() };
                 ctxt.compile(val);
                 ctxt.emit(Copy);
-                ctxt.store(v);
+                if let Expr::Var(v) = &**var {
+                    ctxt.store(v);
+                } else {
+                    var.compile_addr(ctxt);
+                    let height = ctxt.stack_height.unwrap();
+                    ctxt.emit_stream(&[
+                        LclRead(height - 1),
+                        Push(height as Word - 1),
+                        Add,
+                        Swap,
+                        Sub,
+                        StkStr,
+                    ]);
+                }
             }
 
             Inc(e) => {
@@ -201,6 +293,20 @@ impl ASTNode for Expr {
                 ctxt.push_var(v);
                 ctxt.emit_stream(&[Copy, Push(1), Sub]);
                 ctxt.store(v);
+            }
+
+            Indexed(_, _) => {
+                self.compile_addr(ctxt);
+                let height = ctxt.stack_height.unwrap();
+                ctxt.emit_stream(&[
+                    Debug("??"),
+                    LclRead(height - 1),
+                    Push(height as Word),
+                    Add,
+                    Swap,
+                    Sub,
+                    StkRead,
+                ]);
             }
 
             e => todo!("Unsupported expr {:?}", e),
@@ -245,6 +351,29 @@ impl Expr {
             }
             TypeSize(dtype) => Some(dtype.size() as u64),
             _ => None,
+        }
+    }
+
+    pub fn compile_addr(&self, ctxt: &mut CompileContext) {
+        use Expr::*;
+        use StackInst::*;
+        match self {
+            Unary(MonOp::Deref, e) => ctxt.compile(e),
+            Seq(es) => {
+                let n = es.len();
+                for e in &es[0..n - 1] {
+                    ctxt.compile(e);
+                    ctxt.emit(Dealloc(1));
+                }
+                es[n - 1].compile_addr(ctxt);
+            }
+            Indexed(arr, id) => {
+                ctxt.compile(arr);
+                ctxt.compile(id);
+                // Will not work for multidimensional arrays
+                ctxt.emit(Add);
+            }
+            _ => unreachable!("{:?}", self),
         }
     }
 }

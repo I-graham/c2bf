@@ -12,9 +12,9 @@ pub struct CompileContext {
     pub stream: Vec<StackInst>,
     pub ret_lbl: Label,
     pub loop_exit: (Label, Label), // continue & break labels, respectively
-    pub funcs: HashMap<Ident, Label>,
-    pub globals: HashMap<Ident, Word>,
-    locals: HashMap<Ident, Word>,
+    pub funcs: HashMap<Ident, (Label, DType)>,
+    pub globals: HashMap<Ident, (Word, DType)>,
+    locals: HashMap<Ident, (Word, DType)>,
     label_count: Label,
 }
 
@@ -28,24 +28,28 @@ impl CompileContext {
         self.label_count
     }
 
-    pub fn fdecl(&mut self, f: Ident) -> Label {
+    pub fn fdecl(&mut self, f: Ident, ty: DType) -> Label {
         let label = self.label();
-        self.funcs.insert(f, label);
+        self.funcs.insert(f, (label, ty));
         label
     }
 
-    pub fn global_decl(&mut self, v: &Ident, _ty: &DType) {
-        self.globals.insert(v.clone(), self.global_offset as Word);
-        self.global_offset += 1;
+    pub fn global_decl(&mut self, v: &Ident, ty: &DType) {
+        self.globals
+            .insert(v.clone(), (self.global_offset as Word, ty.clone()));
+        let size = ty.size() as usize;
+        self.global_offset += size;
     }
 
-    pub fn local_decl(&mut self, v: &Ident, _ty: &DType) {
-        self.locals.insert(v.clone(), self.local_offset as Word);
-        self.local_offset += 1;
+    pub fn local_decl(&mut self, v: &Ident, ty: &DType) {
+        self.locals
+            .insert(v.clone(), (self.local_offset as Word, ty.clone()));
+        let size = ty.size() as usize;
+        self.local_offset += size;
     }
 
     pub fn fn_label(&mut self, v: &Ident) -> Label {
-        self.funcs[v]
+        self.funcs[v].0
     }
 
     pub fn call_fn(&mut self, v: &Expr, args: &Vec<Expr>) {
@@ -72,31 +76,44 @@ impl CompileContext {
 
     pub fn push_addr(&mut self, v: &Ident) {
         use StackInst::*;
-        if let Some(&addr) = self.globals.get(v) {
-            self.stream.push(Push(addr));
+
+        if let Some((addr, _)) = self.globals.get(v) {
+            self.emit(Push(*addr));
             return;
         }
 
-        unreachable!();
+        if let Some((addr, _)) = self.locals.get(v) {
+            let height = self.stack_height.unwrap();
+            self.emit_stream(&[
+                LclRead(height - 1),
+                Push(height as Word + 1),
+                Add,
+                Push(*addr),
+                Sub,
+            ]);
+            return;
+        }
+
+        unreachable!("{}", v);
     }
 
     pub fn push_var(&mut self, v: &Ident) {
         use StackInst::*;
 
-        if let Some(&addr) = self.globals.get(v) {
+        if let Some((addr, _)) = self.globals.get(v) {
             let height = self.stack_height.unwrap();
             // If in global scope
             if self.ret_lbl == 0 {
                 self.emit_stream(&[
                     Debug("Global access from global scope"),
-                    LclRead(height - addr as usize - 1),
+                    LclRead(height - *addr as usize - 1),
                 ]);
             } else {
                 self.emit_stream(&[
                     LclRead(height - 1),
                     Push(height as Word + 1),
                     Add,
-                    Push(addr),
+                    Push(*addr),
                     Sub,
                     StkRead,
                 ]);
@@ -104,38 +121,38 @@ impl CompileContext {
             return;
         }
 
-        if let Some(&addr) = self.funcs.get(v) {
-            self.emit(Push(addr));
+        if let Some((addr, _)) = self.funcs.get(v) {
+            self.emit(Push(*addr));
             return;
         }
 
-        if let Some(&addr) = self.locals.get(v) {
+        if let Some((addr, _)) = self.locals.get(v) {
             let height = self.stack_height.unwrap();
-            let offset = height - 1 - addr as usize;
+            let offset = height - 1 - *addr as usize;
             self.emit_stream(&[LclRead(offset)]);
             return;
         }
 
-        unreachable!();
+        unreachable!("{}", v);
     }
 
     pub fn store(&mut self, v: &Ident) {
         use StackInst::*;
 
-        if let Some(&addr) = self.locals.get(v) {
+        if let Some((addr, _)) = self.locals.get(v) {
             let height = self.stack_height.unwrap();
-            let offset = height - 1 - addr as usize;
+            let offset = height - 1 - *addr as usize;
             self.emit(LclStr(offset));
             return;
         }
 
-        if let Some(&addr) = self.globals.get(v) {
+        if let Some((addr, _)) = self.globals.get(v) {
             let height = self.stack_height.unwrap();
             self.emit_stream(&[
                 LclRead(height - 1),
                 Push(height as Word),
                 Add,
-                Push(addr),
+                Push(*addr),
                 Sub,
                 StkStr,
             ]);
@@ -143,6 +160,22 @@ impl CompileContext {
         }
 
         unreachable!();
+    }
+
+    pub fn vty(&self, v: &Ident) -> &DType {
+        if let Some((_, t)) = self.locals.get(v) {
+            return t;
+        }
+
+        if let Some((_, t)) = self.globals.get(v) {
+            return t;
+        }
+
+        if let Some((_, t)) = self.funcs.get(v) {
+            return t;
+        }
+
+        unreachable!("{}", v)
     }
 
     pub fn fdef(&mut self, f: &Ident, r: &DType, params: &Vec<ParamDecl>, body: &Stmt) {

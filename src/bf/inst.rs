@@ -81,8 +81,6 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
         use BFInst::*;
         use StackInst::*;
 
-        bf.push(Dbg(format!("{:?}", inst).leak()));
-
         match inst {
             Push(b) => {
                 bf.push(Right);
@@ -248,6 +246,7 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 ",
             )),
             Not => bf.extend(BFInst::parse("[->-<]>-[-<+>]<")), // Inverse of 2's complement
+            Negate => bf.extend(BFInst::parse("[->-<]>[-<+>]<")),
             LShift => bf.extend(BFInst::parse("[-<[->>+>+<<<]>>[-<<+>>]>[-<<<+>>>]<<]<")),
             RShift => bf.extend(BFInst::parse(
                 "
@@ -305,7 +304,10 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 bf.extend(BFInst::parse(">]"));
             }
             Goto => bf.extend(BFInst::parse(">]")),
-            PutChar => bf.extend(BFInst::parse(".[-]<")),
+            PutChar => {
+                bf.push(Dbg("!!!"));
+                bf.extend(BFInst::parse(".[-]<"))
+            }
             Label(0) | Nop | Debug(_) | Comment(_) => {}
             i => todo!("{:?}", i),
         }

@@ -2,8 +2,8 @@ use super::*;
 
 use std::collections::*;
 
-type FDef = (DType, Vec<ParamDecl>, Box<Stmt>);
-type VDef = (bool, DType, Option<Expr>);
+pub type FDef = (DType, Vec<ParamDecl>, Box<Stmt>);
+pub type VDef = (bool, DType, Option<Expr>);
 
 pub struct Program {
     pub funs: HashMap<Ident, FDef>,
@@ -54,13 +54,23 @@ impl ASTNode for Program {
         let init_lbl = ctxt.label(); // Always equal to 1
 
         // Declarations
-        for f in self.funs.keys() {
-            ctxt.fdecl(f.clone());
+        for (f, (ret, args, _)) in &self.funs {
+            let ty = DType::Function(
+                args.iter().map(|(t, _)| t.clone()).collect(),
+                ret.clone().into(),
+            );
+            ctxt.fdecl(f.clone(), ty);
         }
 
         for v in &self.order {
             let (_, ty, _) = &self.vars[v];
             ctxt.global_decl(v, ty);
+        }
+
+        for (v, (_, ty, _)) in &self.vars {
+            if !self.order.contains(v) {
+                ctxt.global_decl(v, ty);
+            }
         }
 
         ctxt.emit(Label(init_lbl));
@@ -75,19 +85,19 @@ impl ASTNode for Program {
 
             ctxt.emit(Comment(v.clone().leak()));
             ctxt.compile(&def);
-            let addr = ctxt.globals[v] as usize;
+            let addr = ctxt.globals[v].0 as usize;
             ctxt.emit(LclStr(self.order.len() - addr));
         }
 
         // Call main()
         ctxt.stack_height = Some(0);
         let ret_lbl = ctxt.label();
-        let main_lbl = ctxt.funcs.get("main").unwrap();
+        let main_lbl = ctxt.funcs.get("main").unwrap().0;
         ctxt.emit_stream(&[
             Debug("Start main call"),
             Push(ret_lbl),
             Push(ctxt.global_offset as _),
-            Push(*main_lbl as _),
+            Push(main_lbl as _),
             Goto,
             Label(ret_lbl),
         ]);

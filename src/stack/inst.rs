@@ -19,6 +19,7 @@ pub enum StackInst {
     Sub,
     Mul,
     Div,
+    Negate,
 
     // Bitwise Ops
     LShift,
@@ -106,6 +107,7 @@ impl StackInst {
             Dealloc(n) => (n, Some(0)),
             GblStr | StkStr => (2, Some(0)),
             GblRead | StkRead => (1, Some(1)),
+            Negate => (1, Some(1)),
             LclStr(_) => (1, Some(0)),
             LclRead(_) => (0, Some(1)),
             Label(_) => (0, None),
@@ -132,6 +134,7 @@ impl std::fmt::Debug for StackInst {
             Sub => write!(f, "SubB"),
             Mul => write!(f, "MulB"),
             Div => write!(f, "DivB"),
+            Negate => write!(f, "Negate"),
             LShift => write!(f, "LShift"),
             RShift => write!(f, "RShift"),
             Alloc(n) => write!(f, "Alloc({})", n),

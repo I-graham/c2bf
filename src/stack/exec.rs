@@ -155,6 +155,10 @@ impl StackMachine {
                     let word = self.stack.pop().unwrap();
                     self.stack.push(!word);
                 }
+                Negate => {
+                    let word = self.stack.pop().unwrap();
+                    self.stack.push(!word + 1);
+                }
 
                 o @ (Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr) => {
                     let b = self.stack.pop().unwrap();

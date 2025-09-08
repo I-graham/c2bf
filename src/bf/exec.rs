@@ -6,7 +6,7 @@ use super::*;
 pub fn exec_bf(code: &[BFInst]) {
     let map = parse_bracs(code);
     let mut ip = 0;
-    let mut stack = vec![0u8];
+    let mut stack = vec![0 as Word];
     let mut head = 0;
     let mut stdin = std::io::stdin();
 
@@ -17,7 +17,6 @@ pub fn exec_bf(code: &[BFInst]) {
                 #[cfg(feature = "debugbf")]
                 {
                     dbg!(head);
-                    dbg!(&stack);
                     dbg!(_msg);
                 }
             }
@@ -33,9 +32,9 @@ pub fn exec_bf(code: &[BFInst]) {
             In => {
                 let mut buf = [0];
                 stdin.read_exact(&mut buf).expect("No input");
-                stack[head] = buf[0];
+                stack[head] = buf[0] as Word;
             }
-            Out => println!("{}", stack[head] as char),
+            Out => println!("{}", stack[head] as u8 as char),
             LBrac => {
                 if stack[head] == 0 {
                     ip = map[&ip];

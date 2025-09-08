@@ -38,7 +38,7 @@ impl ASTNode for DType {
 
                     let mut long = false;
                     let mut signed = true;
-                    let mut ty = S32;
+                    let mut ty = S16;
 
                     for spec in specs {
                         match spec.as_str() {
@@ -46,7 +46,7 @@ impl ASTNode for DType {
                             "signed" => signed = true,
                             "char" => ty = S8,
                             "short" => ty = S16,
-                            "int" => ty = S32,
+                            "int" => ty = S16,
                             "long" => {
                                 long = true;
                                 ty = S32;
@@ -101,7 +101,7 @@ impl DType {
         match self {
             Void => 0,
             U8 | S8 => 1,
-            U16 | S16 => 2,
+            U16 | S16 => 1,
             U32 | S32 => 4,
             U64 | S64 => 8,
             Float => 4,
