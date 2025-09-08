@@ -12,4 +12,6 @@ int main() {
   v = &x;
   inc();
   putchar('0'+x);
+  *v = *v - 1;
+  putchar('0'+x);
 }

@@ -167,7 +167,7 @@ impl ASTNode for Expr {
                 let height = ctxt.stack_height.unwrap();
                 ctxt.emit_stream(&[
                     LclRead(height - 1),
-                    Push(height as Word),
+                    Push(height as Word - 1),
                     Add,
                     Swap,
                     Sub,
