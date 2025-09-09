@@ -68,7 +68,7 @@ impl ASTNode for Program {
         }
 
         for (v, (_, ty, _)) in &self.vars {
-            if !self.order.contains(v) {
+            if !self.order.contains(v) && !matches!(ty, DType::Function(_, _)) {
                 ctxt.global_decl(v, ty);
             }
         }
@@ -94,7 +94,6 @@ impl ASTNode for Program {
         let ret_lbl = ctxt.label();
         let main_lbl = ctxt.funcs.get("main").unwrap().0;
         ctxt.emit_stream(&[
-            Debug("Start main call"),
             Push(ret_lbl),
             Push(ctxt.global_offset as Word + 1),
             Push(main_lbl as _),

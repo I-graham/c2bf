@@ -255,6 +255,26 @@ pub fn asm_to_bf(stack: &[StackInst]) -> Vec<BFInst> {
                 >[-<<+>>]<<
                 ",
             )),
+            Div => bf.extend(BFInst::parse(
+                // From https://esolangs.org/wiki/Brainfuck_algorithms#Divmod
+                "
+                // Execute
+                [->-[>+>>]>[+[-<+>]>+>>]<<<<<]
+                // Return value
+                >[-]>[-]>[-<<<+>>>]<<<
+                ",
+            )),
+            Mod => bf.extend(BFInst::parse(
+                // From https://esolangs.org/wiki/Brainfuck_algorithms#Modulo
+                "
+                // Prepare state
+                [->>+<<]<[->+<]>
+                // Perform modulo
+                [>+>->+<[>]>[<+>-]<<[<]>-]
+                // Return answer
+                >[-]>[-]>[-<<<<+>>>>]<<<<
+                ",
+            )),
 
             StkRead => {
                 // Prepare state

@@ -2,7 +2,7 @@ use super::*;
 
 pub type ParamDecl = (DType, Option<Ident>);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Declarator {
     Abstract,
     Var(Ident),

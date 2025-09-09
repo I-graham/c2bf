@@ -41,8 +41,11 @@ unary_expr =
 	{ postfix_expr
 	| prefix_op ~ unary_expr
 	| unary_operator ~ cast_expr
+	| addr_of
 	| type_size_expr
 	}
+
+addr_of = ${"&" ~ postfix_expr}
 
 prefix_op =
 	{ "++"
@@ -53,7 +56,7 @@ prefix_op =
 type_size_expr = { "sizeof" ~ "(" ~ type_name ~ ")" }
 
 unary_operator =
-	{ "&"
+	{
 	| "*"
 	| "+"
 	| "-"
@@ -97,7 +100,7 @@ lor_expr = {land_expr ~ (lor_op ~ land_expr)*}
 	lor_op = {"||"}
 
 conditional_expr =
-	{ lor_expr ~ "?" ~ expr ~ "{" ~ conditional_expr
+	{ lor_expr ~ "?" ~ expr ~ ":" ~ conditional_expr
 	| lor_expr
  	} 	
 
@@ -240,7 +243,6 @@ identifier_list = { IDENTIFIER ~ ("," ~ IDENTIFIER)* }
 type_name =
 	{ specifier_qualifier_list ~ abstract_declarator
 	| specifier_qualifier_list
-	| IDENTIFIER
 	}
 
 abstract_declarator =

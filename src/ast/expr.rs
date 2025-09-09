@@ -73,6 +73,9 @@ impl ASTNode for Expr {
                 [e] -> e;
                 [op, e] -> Unary(op, e);
 
+            addr_of
+                [e] -> Unary(MonOp::AddrOf, e);
+
             type_size_expr
                 [ty] -> TypeSize(ty);
 
@@ -195,10 +198,12 @@ impl ASTNode for Expr {
 
                 // Short-circuiting And
                 if let Some((BinOp::LAnd, _)) = args.first() {
+                    let height = ctxt.stack_height;
                     let last = ctxt.label();
                     let fail = ctxt.label();
 
                     for (_, arg) in args {
+                        ctxt.stack_height = height;
                         let cont = ctxt.label();
                         ctxt.emit_stream(&[Branch(cont, fail), Label(cont)]);
                         ctxt.compile(arg);
@@ -213,17 +218,20 @@ impl ASTNode for Expr {
                         Goto,
                         Label(last),
                     ]);
+                    ctxt.stack_height = height;
 
                     return;
                 }
 
                 // Short-circuiting Or
                 if let Some((BinOp::LOr, _)) = args.first() {
+                    let height = ctxt.stack_height;
                     let succ = ctxt.label();
                     let last = ctxt.label();
 
                     for (_, arg) in args {
                         let cont = ctxt.label();
+                        ctxt.stack_height = height;
                         ctxt.emit_stream(&[Branch(succ, cont), Label(cont)]);
                         ctxt.compile(arg);
                     }
@@ -237,6 +245,7 @@ impl ASTNode for Expr {
                         Goto,
                         Label(last),
                     ]);
+                    ctxt.stack_height = height;
 
                     return;
                 }
@@ -258,6 +267,7 @@ impl ASTNode for Expr {
                         BinOp::And => And,
                         BinOp::Or => Or,
                         BinOp::Xor => Xor,
+                        BinOp::Mod => Mod,
                         _ => unreachable!(),
                     };
 
@@ -326,19 +336,15 @@ impl ASTNode for Expr {
                 ctxt.compile(val);
                 ctxt.emit_stream(&[op, Swap, LclRead(1), Swap]);
 
-                if let Expr::Var(v) = &**var {
-                    ctxt.store(v);
-                } else {
-                    let height = ctxt.stack_height.unwrap();
-                    ctxt.emit_stream(&[
-                        LclRead(height - 1),
-                        Push(height as Word - 2),
-                        Add,
-                        Swap,
-                        Sub,
-                        StkStr,
-                    ]);
-                }
+                let height = ctxt.stack_height.unwrap();
+                ctxt.emit_stream(&[
+                    LclRead(height - 1),
+                    Push(height as Word - 2),
+                    Add,
+                    Swap,
+                    Sub,
+                    StkStr,
+                ]);
             }
 
             Inc(e) => {

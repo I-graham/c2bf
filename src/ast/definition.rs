@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Debug)]
 pub enum Defn {
     Struct(DType, Option<Ident>),
     Union(DType, Option<Ident>),

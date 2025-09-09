@@ -1,11 +1,7 @@
-int fibs[10];
+int z[1760];
 
 int main() {
-  fibs[1] = 1;
+  int o = 120;
 
-  for (int i = 2; i < 10; i++) {
-    fibs[i] = fibs[i - 1] + fibs[i - 2];
-  }
-
-  putchar(fibs[9]);
+  z[o] = 10;
 }

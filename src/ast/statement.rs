@@ -2,6 +2,7 @@ use super::*;
 
 type Label = String;
 
+#[derive(Debug)]
 pub enum Stmt {
     DefnStmt(Defn),
     ExprStmt(Option<Expr>),
@@ -102,6 +103,7 @@ impl ASTNode for Stmt {
     }
 
     fn compile(&self, ctxt: &mut CompileContext) {
+        let height = ctxt.stack_height;
         use StackInst::*;
         use Stmt::*;
         match self {
@@ -224,6 +226,7 @@ impl ASTNode for Stmt {
             }
             _ => todo!(),
         }
+        ctxt.stack_height = height;
     }
 }
 

@@ -98,10 +98,7 @@ impl CompileContext {
             let height = self.stack_height.unwrap();
             // If in global scope
             if self.ret_lbl == 0 {
-                self.emit_stream(&[
-                    Debug("Global access from global scope"),
-                    LclRead(height - *addr as usize - 1),
-                ]);
+                self.emit(LclRead(height - *addr as usize - 1));
             } else {
                 self.emit_stream(&[
                     LclRead(height - 1),

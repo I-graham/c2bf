@@ -45,7 +45,7 @@ impl StackMachine {
                 Nop | Label(_) | Comment(_) => (),
                 Push(b) => self.stack.push(b),
                 PutChar => {
-                    println!("{}", self.stack.pop().unwrap());
+                    print!("{}", self.stack.pop().unwrap() as u8 as char);
                 }
 
                 Alloc(n) => {
@@ -129,19 +129,20 @@ impl StackMachine {
                     continue;
                 }
 
-                o @ (Add | Sub | Mul | Div | LShift | RShift | And | Or | Xor) => {
+                o @ (Add | Sub | Mul | Div | LShift | RShift | And | Or | Xor | Mod) => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     let out = match o {
-                        Add => a + b,
-                        Sub => a - b,
-                        Mul => a * b,
+                        Add => a.wrapping_add(b),
+                        Sub => a.wrapping_sub(b),
+                        Mul => a.wrapping_mul(b),
                         Div => a / b,
-                        LShift => a << b,
-                        RShift => a >> b,
+                        LShift => a.wrapping_shl(b as _),
+                        RShift => a.wrapping_shr(b as _),
                         And => a & b,
                         Or => a | b,
                         Xor => a ^ b,
+                        Mod => a % b,
                         _ => unreachable!(),
                     };
                     self.stack.push(out)
@@ -157,7 +158,7 @@ impl StackMachine {
                 }
                 Negate => {
                     let word = self.stack.pop().unwrap();
-                    self.stack.push(!word + 1);
+                    self.stack.push(word.wrapping_neg());
                 }
 
                 o @ (Eq | Neq | Lt | LtEq | Gr | GrEq | LAnd | LOr) => {
