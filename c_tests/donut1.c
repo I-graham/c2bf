@@ -113,6 +113,8 @@ unsigned short main() {
       putchar(k % 80 ? buff[k] : 10);
     }
 
+    break;
+
     f = cA;
     cA -= shr(5*sA,(precision-3));
     sA += shr(5*f,(precision-3));

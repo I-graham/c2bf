@@ -34,7 +34,7 @@ pub fn exec_bf(code: &[BFInst]) {
                 stdin.read_exact(&mut buf).expect("No input");
                 stack[head] = buf[0] as Word;
             }
-            Out => println!("{}", stack[head] as u8 as char),
+            Out => print!("{}", stack[head] as u8 as char),
             LBrac => {
                 if stack[head] == 0 {
                     ip = map[&ip];
