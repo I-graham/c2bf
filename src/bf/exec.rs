@@ -3,16 +3,18 @@ use std::io::Read;
 
 use super::*;
 
-pub fn exec_bf(code: &[BFInst]) {
-    let map = parse_bracs(code);
+pub fn exec_bf(bf: &[BF]) {
+    let fast = bf.iter().cloned().map(FastBF::from).collect::<Vec<_>>();
+
+    let map = parse_bracs(&fast);
     let mut ip = 0;
     let mut stack = vec![0 as Word];
     let mut head = 0;
     let mut stdin = std::io::stdin();
 
-    while ip < code.len() {
-        use BFInst::*;
-        match code[ip] {
+    while ip < bf.len() {
+        use BF::*;
+        match bf[ip] {
             Dbg(_msg) => {
                 #[cfg(feature = "debugbf")]
                 {
@@ -29,12 +31,12 @@ pub fn exec_bf(code: &[BFInst]) {
             }
             Inc => stack[head] = stack[head].wrapping_add(1),
             Dec => stack[head] = stack[head].wrapping_sub(1),
-            In => {
+            Input => {
                 let mut buf = [0];
                 stdin.read_exact(&mut buf).expect("No input");
                 stack[head] = buf[0] as Word;
             }
-            Out => print!("{}", stack[head] as u8 as char),
+            Output => print!("{}", stack[head] as u8 as char),
             LBrac => {
                 if stack[head] == 0 {
                     ip = map[&ip];
@@ -50,15 +52,68 @@ pub fn exec_bf(code: &[BFInst]) {
     }
 }
 
-fn parse_bracs(code: &[BFInst]) -> HashMap<usize, usize> {
+pub fn exec_fastbf(fast: &[FastBF]) {
+    let map = parse_bracs(fast);
+    let mut ip = 0;
+    let mut stack = vec![0 as Word];
+    let mut head = 0;
+    let mut stdin = std::io::stdin();
+
+    while ip < fast.len() {
+        use FastBF::*;
+        match &fast[ip] {
+            Move(n) => {
+                head = (head as isize).wrapping_add(*n) as usize;
+                if head >= stack.len() {
+                    stack.resize(head + 1, 0);
+                }
+            }
+            Const(n) => {
+                stack[head] = (stack[head] as isize).wrapping_add(*n) as _;
+            }
+            AddCell(vs) => {
+                let val = stack[head] as isize;
+                for (d, m) in vs {
+                    let p = (head as isize).wrapping_add(*d) as usize;
+
+                    if p >= stack.len() {
+                        stack.resize(p + 1, 0);
+                    }
+
+                    stack[p] = (stack[p] as isize).wrapping_add(m * val) as _;
+                }
+                stack[head] = 0;
+            }
+            In => {
+                let mut buf = [0];
+                stdin.read_exact(&mut buf).expect("No input");
+                stack[head] = buf[0] as Word;
+            }
+            Out => print!("{}", stack[head] as u8 as char),
+            LB => {
+                if stack[head] == 0 {
+                    ip = map[&ip];
+                }
+            }
+            RB => {
+                if stack[head] != 0 {
+                    ip = map[&ip];
+                }
+            }
+        }
+        ip += 1;
+    }
+}
+
+fn parse_bracs(code: &[FastBF]) -> HashMap<usize, usize> {
     let mut map = HashMap::default();
     let mut bracs = vec![];
 
     for (i, inst) in code.iter().enumerate() {
-        use BFInst::*;
+        use FastBF::*;
         match inst {
-            LBrac => bracs.push(i),
-            RBrac => {
+            LB => bracs.push(i),
+            RB => {
                 let start = bracs.pop().unwrap();
                 map.insert(i, start);
                 map.insert(start, i);

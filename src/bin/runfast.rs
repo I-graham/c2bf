@@ -23,7 +23,9 @@ fn main() {
     let transpilation = translate(&stream);
     println!("{}", show_bf(&transpilation, cfg!(feature = "debugbf")));
 
+    let optimized = optimize(&transpilation);
+
     println!("\nExecution:\n");
 
-    exec_bf(&transpilation);
+    exec_fastbf(&optimized);
 }
