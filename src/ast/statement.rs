@@ -140,6 +140,8 @@ impl ASTNode for Stmt {
                 let lbl = ctxt.label();
                 if let Some(expr) = e {
                     ctxt.compile(expr);
+                } else {
+                    ctxt.emit(Push(0));
                 }
                 ctxt.emit_stream(&[Push(ctxt.ret_lbl), Goto, Label(lbl)]);
             }

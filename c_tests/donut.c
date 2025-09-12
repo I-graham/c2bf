@@ -8,7 +8,7 @@ unsigned short shl(unsigned short x, unsigned short s) {
 }
 
 unsigned short shr(unsigned short x, unsigned short s) {
-  unsigned short b = x & (1<<15);
+  short b = x & (1<<15);
 
   for (short v = 0; v < s; v++) {
     x = x >> 1;
@@ -19,14 +19,12 @@ unsigned short shr(unsigned short x, unsigned short s) {
 }
 
 unsigned short div(unsigned short p, unsigned short q) {
-  unsigned short b = (1<<15)&p;
-  unsigned short o;
+  short b = (1<<15)&p;
   if (b) {
     p = -p;
-    return - (p/q);
+    return -(p / q);
   }
-
-  return (p/q);
+  return p / q;
 }
 
 unsigned short to_char(unsigned short p) {
@@ -51,7 +49,7 @@ unsigned short lt(unsigned short lhs, unsigned short rhs) {
 
   if (lb && rb) {
     lhs = -lhs;
-    rhs = -rhs;
+    rhs = -lhs;
     return rhs < lhs;
   }
 
@@ -84,7 +82,7 @@ unsigned short main() {
         unsigned short x6 = K2 + im;
         unsigned short x7 = shr(cj*si,precision);
         x6 = div(x6, 15);
-        unsigned short px = div(2*(cB*x1 - sB*x4), x6);
+        unsigned short px = div(2* (cB*x1 - sB*x4), x6);
         unsigned short x = 40 + px;
         unsigned short y = 12 + div(  (cB*x4 + sB*x1),x6);
         unsigned short N = shr(shr(-cA*x7 - cB*(shr(-sA*x7,precision) + x2) - ci*shr(cj*sB,precision),precision) - x5, precision-3);
@@ -115,6 +113,8 @@ unsigned short main() {
       putchar(k % 80 ? buff[k] : 10);
     }
 
+    break;
+
     f = cA;
     cA -= shr(5*sA,(precision-3));
     sA += shr(5*f,(precision-3));
@@ -129,12 +129,12 @@ unsigned short main() {
     cB = shr(cB*f,precision);
     sB = shr(sB*f,precision);
     
-    // putchar(27);
-    // putchar(91);
-    // putchar('2');
-    // putchar('3');
-    // putchar('A');
 
+    putchar(27);
+    putchar(91);
+    putchar('2');
+    putchar('3');
+    putchar('A');
   }
 }
 

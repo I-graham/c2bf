@@ -259,7 +259,7 @@ pub fn translate(stack: &[StackInst]) -> Vec<BF> {
                 // From https://esolangs.org/wiki/Brainfuck_algorithms#Divmod
                 "
                 // Execute
-                [->-[>+>>]>[+[-<+>]>+>>]<<<<<]
+                <[->-[>+>>]>[+[-<+>]>+>>]<<<<<]
                 // Return value
                 >[-]>[-]>[-<<<+>>>]<<<
                 ",

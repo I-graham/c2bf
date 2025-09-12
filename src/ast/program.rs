@@ -103,8 +103,8 @@ impl ASTNode for Program {
         ctxt.emit(Exit);
 
         // Definitions
-        for (f, (r, ps, b)) in &self.funs {
-            ctxt.fdef(f, r, ps, b);
+        for (f, (_, ps, b)) in &self.funs {
+            ctxt.fdef(f, ps, b);
         }
 
         // Label 0 is always Exit

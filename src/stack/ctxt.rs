@@ -169,7 +169,7 @@ impl CompileContext {
         unreachable!("{}", v)
     }
 
-    pub fn fdef(&mut self, f: &Ident, r: &DType, params: &Vec<ParamDecl>, body: &Stmt) {
+    pub fn fdef(&mut self, f: &Ident, params: &Vec<ParamDecl>, body: &Stmt) {
         // New Stack Frame
         self.ret_lbl = self.label();
 
@@ -204,23 +204,18 @@ impl CompileContext {
 
         self.compile(body);
 
-        if r == &DType::Void {
-            self.stack_height = None;
-            self.emit_stream(&[Label(self.ret_lbl), Dealloc(frame_size), Goto]);
-        } else {
-            self.stack_height = None; // Ignore stack height from this point on.
-                                      // Return to caller, which should have pushed a return label
-            self.emit_stream(&[
-                Push(0),
-                Push(self.ret_lbl),
-                Goto,
-                Label(self.ret_lbl),
-                Move(frame_size),
-                Dealloc(frame_size),
-                Swap,
-                Goto,
-            ]);
-        }
+        self.stack_height = None; // Ignore stack height from this point on.
+                                  // Return to caller, which should have pushed a return label
+        self.emit_stream(&[
+            Push(0),
+            Push(self.ret_lbl),
+            Goto,
+            Label(self.ret_lbl),
+            Move(frame_size),
+            Dealloc(frame_size),
+            Swap,
+            Goto,
+        ]);
     }
 
     pub fn emit(&mut self, inst: StackInst) {
