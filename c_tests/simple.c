@@ -11,5 +11,6 @@ int rec() {
 int main() {
   h = h + 4;
   putchar(h);
+  putchar(i);
   rec();
 }

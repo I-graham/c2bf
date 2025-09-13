@@ -1,7 +1,13 @@
-int z[1760];
+int z[10];
 
 int main() {
-  int o = 120;
+  z[1] = 1;
 
-  z[o] = 10;
+  for (int i = 2; i < 10; i++) {
+    z[i] = z[i - 1] + z[i - 2];
+  }
+
+  putchar('0' + z[0]);
+  putchar('0' + z[1]);
+  putchar(z[9]);
 }
