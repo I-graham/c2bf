@@ -15,6 +15,7 @@ pub enum FastBF {
     BinAnd,
     BinOr,
     BinXor,
+    Mult,
     Rem,
     ShiftR,
     Store,
@@ -91,6 +92,7 @@ fn convert(bf: &[BF]) -> Vec<FastBF> {
         (GrEq, Geq),
         (Mod, Rem),
         (RShift, ShiftR),
+        (Mul, Mult),
     ];
 
     let mut fast_code = vec![];

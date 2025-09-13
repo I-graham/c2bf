@@ -29,8 +29,10 @@ fn main() {
 
     let profile = exec_fastbf(&optimized);
 
-    let mut sorted = profile.into_iter().collect::<Vec<_>>();
-    sorted.sort_unstable_by_key(|(_, t)| *t);
+    if cfg!(feature = "profile") {
+        let mut sorted = profile.into_iter().collect::<Vec<_>>();
+        sorted.sort_unstable_by_key(|(_, t)| *t);
 
-    println!("\n\nProfile:\n{:?}", sorted);
+        println!("\n\nProfile:\n{:?}", sorted);
+    }
 }

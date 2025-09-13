@@ -68,9 +68,9 @@ unsigned short main() {
     }
 
     unsigned short sj=0, cj=shl(1,precision);
-    for (j = 0; j < 90; j++) {
+    for (j = 0; j < 1; j++) {
       unsigned short si=0, ci=shl(1,precision);
-      for (i = 0; i<324; i++) {
+      for (i = 0; i<1; i++) {
         unsigned short R1=1, R2=shl(2,precision), K2=shl(5, 2*precision);
         unsigned short x0 = R1*cj + R2;
         unsigned short x1 = shr(ci*x0,precision);

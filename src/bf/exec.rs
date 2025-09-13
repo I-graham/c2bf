@@ -110,6 +110,11 @@ pub fn exec_fastbf(fast: &[FastBF]) -> HashMap<StackInst, usize> {
                 stack[head] = 0;
                 head -= 1;
             }
+            Mult => {
+                stack[head - 1] *= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
             Geq => {
                 let word = if stack[head - 1] >= stack[head] { 1 } else { 0 };
 

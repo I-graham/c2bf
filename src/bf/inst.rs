@@ -115,6 +115,7 @@ pub fn emit_bf(inst: StackInst, bf: &mut Vec<BF>) {
         Copy => bf.extend(BF::parse("[->+>+<<]>>[-<<+>>]<")),
         Mul => bf.extend(BF::parse(
             "
+            >[-]>[-]>[-]<<<
             <[->>+<<]        // Make room for return value
             >[-              // repeat x times
                >[->+>+<<]    // copy y to 2 new stack locations
