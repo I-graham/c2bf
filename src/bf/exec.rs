@@ -15,6 +15,7 @@ pub fn exec_bf(bf: &[BF]) {
     while ip < bf.len() {
         use BF::*;
         match bf[ip] {
+            Profile(_) => (),
             Dbg(_msg) => {
                 #[cfg(feature = "debugbf")]
                 {
@@ -52,16 +53,21 @@ pub fn exec_bf(bf: &[BF]) {
     }
 }
 
-pub fn exec_fastbf(fast: &[FastBF]) {
+pub fn exec_fastbf(fast: &[FastBF]) -> HashMap<StackInst, usize> {
     let map = parse_bracs(fast);
     let mut ip = 0;
     let mut stack = vec![0 as Word];
     let mut head = 0;
     let mut stdin = std::io::stdin();
+    let mut inst = StackInst::Nop;
+    let mut profile = HashMap::new();
 
     while ip < fast.len() {
+        *profile.entry(inst).or_insert(0) += 1;
+
         use FastBF::*;
         match &fast[ip] {
+            Inst(i) => inst = *i,
             Move(n) => {
                 head = (head as isize).wrapping_add(*n) as usize;
                 if head >= stack.len() {
@@ -84,6 +90,57 @@ pub fn exec_fastbf(fast: &[FastBF]) {
                 }
                 stack[head] = 0;
             }
+            BinAnd => {
+                stack[head - 1] &= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
+            BinOr => {
+                stack[head - 1] |= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
+            BinXor => {
+                stack[head - 1] ^= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
+            Rem => {
+                stack[head - 1] %= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
+            Mult => {
+                stack[head - 1] *= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
+            Geq => {
+                let word = if stack[head - 1] >= stack[head] { 1 } else { 0 };
+
+                stack[head] = 0;
+                head -= 1;
+                stack[head] = word;
+            }
+            ShiftR => {
+                stack[head - 1] >>= stack[head];
+                stack[head] = 0;
+                head -= 1;
+            }
+            Read => {
+                let addr = stack[head];
+                stack[head] = stack[head - addr as usize];
+            }
+            Store => {
+                let addr = stack[head];
+                let word = stack[head - 1];
+                let addr = head - addr as usize - 1;
+                stack[head] = 0;
+                head -= 1;
+                stack[head] = 0;
+                stack[addr] = word;
+                head -= 1;
+            }
             In => {
                 let mut buf = [0];
                 stdin.read_exact(&mut buf).expect("No input");
@@ -103,6 +160,8 @@ pub fn exec_fastbf(fast: &[FastBF]) {
         }
         ip += 1;
     }
+
+    profile
 }
 
 fn parse_bracs(code: &[FastBF]) -> HashMap<usize, usize> {

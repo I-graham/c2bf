@@ -49,7 +49,7 @@ unsigned short lt(unsigned short lhs, unsigned short rhs) {
 
   if (lb && rb) {
     lhs = -lhs;
-    rhs = -rhs;
+    rhs = -lhs;
     return rhs < lhs;
   }
 
@@ -61,16 +61,20 @@ unsigned short main() {
   unsigned short precision = 6;
   unsigned short c_3 = shl(3,2*precision);
   unsigned short sA=shl(1,precision), cA = 0, sB=shl(1,precision), cB=0;
-  while (1) {
+  {
+    putchar('?');
+    putchar(10);
     for (i = 0; i < 1760; i++) {
       buff[i] = 32;
       z[i] = 127;
     }
+    putchar('!');
+    putchar(10);
 
     unsigned short sj=0, cj=shl(1,precision);
-    for (j = 0; j < 90; j++) {
+    for (j = 0; j < 1; j++) {
       unsigned short si=0, ci=shl(1,precision);
-      for (i = 0; i<324; i++) {
+      for (i = 0; i<1; i++) {
         unsigned short R1=1, R2=shl(2,precision), K2=shl(5, 2*precision);
         unsigned short x0 = R1*cj + R2;
         unsigned short x1 = shr(ci*x0,precision);
@@ -112,6 +116,8 @@ unsigned short main() {
     for (unsigned short k = 0; k < 1761; k++) {
       putchar(k % 80 ? buff[k] : 10);
     }
+
+    break;
 
     f = cA;
     cA -= shr(5*sA,(precision-3));
@@ -166,3 +172,4 @@ char display(unsigned short n) {
     return 0;
   }
 }
+

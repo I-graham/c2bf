@@ -27,5 +27,12 @@ fn main() {
 
     println!("\nExecution:\n");
 
-    exec_fastbf(&optimized);
+    let profile = exec_fastbf(&optimized);
+
+    if cfg!(feature = "profile") {
+        let mut sorted = profile.into_iter().collect::<Vec<_>>();
+        sorted.sort_unstable_by_key(|(_, t)| *t);
+
+        println!("\n\nProfile:\n{:?}", sorted);
+    }
 }
